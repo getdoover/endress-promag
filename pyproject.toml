@@ -1,5 +1,5 @@
 [project]
-name = "app-template"
+name = "endress-promag"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -10,8 +10,8 @@ dependencies = [
 ]
 
 [project.scripts]
-doover-app-run = "app_template:main"
-export-config = "app_template.app_config:export"
+doover-app-run = "endress_promag:main"
+export-config = "endress_promag.app_config:export"
 
 [build-system]
 requires = ["hatchling"]

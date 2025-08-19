@@ -1,7 +1,7 @@
 from pydoover import ui
 
 
-class SampleUI:
+class EndressPromagUI:
     def __init__(self):
         self.is_working = ui.BooleanVariable("is_working", "We Working?")
         self.uptime = ui.DateTimeVariable("uptime", "Started")

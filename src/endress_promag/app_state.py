@@ -4,7 +4,7 @@ from pydoover.state import StateMachine
 
 log = logging.getLogger(__name__)
 
-class SampleState:
+class EndressPromagState:
     state: str
 
     states = [

@@ -4,25 +4,25 @@ import time
 from pydoover.docker import Application
 from pydoover import ui
 
-from .app_config import SampleConfig
-from .app_ui import SampleUI
-from .app_state import SampleState
+from .app_config import EndressPromagConfig
+from .app_ui import EndressPromagUI
+from .app_state import EndressPromagState
 
 log = logging.getLogger()
 
-class SampleApplication(Application):
-    config: SampleConfig  # not necessary, but helps your IDE provide autocomplete!
+class EndressPromagApplication(Application):
+    config: EndressPromagConfig  # not necessary, but helps your IDE provide autocomplete!
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.started: float = time.time()
-        self.ui: SampleUI = None
-        self.state: SampleState = None
+        self.ui: EndressPromagUI = None
+        self.state: EndressPromagState = None
 
     async def setup(self):
-        self.ui = SampleUI()
-        self.state = SampleState()
+        self.ui = EndressPromagUI()
+        self.state = EndressPromagState()
         self.ui_manager.add_children(*self.ui.fetch())
 
     async def main_loop(self):

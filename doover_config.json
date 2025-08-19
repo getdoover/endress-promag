@@ -1,16 +1,15 @@
 {
-    "sample_application": {
-        "key": "32134bbb-5278-43c0-a6ca-4046a5edeb9f",
-        "name": "sample_application",
-        "display_name": "Sample Application",
+    "endress_promag": {
+        "name": "endress_promag",
+        "display_name": "Endress Promag",
         "type": "DEV",
         "visibility": "PUB",
         "allow_many": true,
-        "description": "A template application for Doover",
+        "description": "A Doover App for Interacting with Endress Hauser Promag Meters",
         "long_description": "README.md",
         "depends_on": [],
         "owner_org_key": "",
-        "image_name": "ghcr.io/getdoover/app_template",
+        "image_name": "ghcr.io/getdoover/endress_promag:latest",
         "container_registry_profile_key": "",
         "build_args": "--platform linux/amd64,linux/arm64",
         "config_schema": {
@@ -46,6 +45,8 @@
                 "a_funny_message",
                 "simulator_app_key"
             ]
-        }
+        },
+        "owner_org": "36a22e32-ab81-4a39-b400-869d532a052d",
+        "container_registry_profile": "88953909-e9c4-4f81-9ec0-56239d4b0a2e"
     }
 }
