@@ -7,6 +7,7 @@ class EndressPromagUI:
 
         self.volume_flow = ui.NumericVariable("volume_flow", "Flow m3/h", precision=2)
         self.mass_flow = ui.NumericVariable("mass_flow", "Flow kg/min", precision=2)
+        self.conductivity = ui.NumericVariable("conductivity", "Conductivity uS/cm", precision=2)
         self.totaliser_1 = ui.NumericVariable("totaliser_1", "Totaliser 1 (m3)", precision=2)
         self.last_read_age = ui.DateTimeVariable("last_read_age", "Time since last read")
 
@@ -14,11 +15,12 @@ class EndressPromagUI:
         self.meter_error_warning = ui.WarningIndicator("meter_error_warning", f"{app.config.meter_name} Error", hidden=True)
 
     def fetch(self):
-        return self.volume_flow, self.mass_flow, self.totaliser_1, self.no_comms_warning, self.meter_error_warning
+        return self.volume_flow, self.mass_flow, self.totaliser_1, self.last_read_age, self.no_comms_warning, self.meter_error_warning
 
     def update(self):
         self.volume_flow.update(self.app.volume_flow)
         self.mass_flow.update(self.app.mass_flow)
+        self.conductivity.update(self.app.conductivity)
         self.totaliser_1.update(self.app.totaliser_1)
         self.last_read_age.update(self.app.last_read_age)
 

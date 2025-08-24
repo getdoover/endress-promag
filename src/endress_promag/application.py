@@ -103,6 +103,16 @@ class EndressPromagApplication(Application):
         return float(value)
     
     @property
+    def conductivity(self):
+        value = self.eh_meter.get_value("Conductivity")
+        if value is None or value == "" or value == "-nan":
+            return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
+
+    @property
     def totaliser_1(self):
         value = self.eh_meter.get_value("Totalizer value 1")
         if value is None:
