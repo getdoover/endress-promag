@@ -18,6 +18,7 @@ class EndressPromagApplication(Application):
         super().__init__(*args, **kwargs)
 
         self.loop_target_period = 5 # seconds
+        self.last_status_print = time.time()
 
         self.started: float = time.time()
         self.ui: EndressPromagUI = None
@@ -37,10 +38,11 @@ class EndressPromagApplication(Application):
         await self.eh_meter.update()
         correct_serial = self.ensure_serial_number()
         self.print_status()
+        await self.update_tags()
         self.ui.update()
         if not correct_serial:
             log.warning("Serial number mismatch, Sleeping Longer")
-            await asyncio.sleep(20)
+            await asyncio.sleep(25)
 
     async def update_tags(self):
         update = {
@@ -61,10 +63,12 @@ class EndressPromagApplication(Application):
         return True
 
     def print_status(self):
-        if self.last_read_age > 1:
+        # If there hasn't been an update since the last print, print a warning
+        if self.last_read_age > (time.time() - self.last_status_print):
             log.warning("No connection to meter")
         else:
             log.info(f"Volume flow: {self.volume_flow}, Totaliser 1: {self.totaliser_1}")
+        self.last_status_print = time.time()
 
     @property
     def volume_flow(self):

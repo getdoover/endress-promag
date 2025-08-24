@@ -4,11 +4,14 @@ import json
 import time
 import base64
 import traceback
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import websockets
 from Crypto.Cipher import AES
 from Crypto.Hash import CMAC
+
+log = logging.getLogger(__name__)
 
 
 # ----------------------- Crypto helpers -----------------------
@@ -143,7 +146,7 @@ class EHMeter:
                     if self.values or attempt == 2:
                         return self.values
             except Exception as e:
-                print("ERROR Retrieving EH Measured Values : ", e)
+                log.error(f"Error Retrieving EH Measured Values : {e}")
                 if self.debug:
                     traceback.print_exc()
 
@@ -317,8 +320,8 @@ class EHMeter:
         p = await self._maybe_login(p)
 
         entries = (p.get("Menu", {}) or {}).get("Entries", []) or []
-        if not entries and self.debug:
-            print("WARNING: Not logged in")
+        if not entries:
+            log.warning("Not logged in")
         return p
 
     async def _maybe_updates(self, payload: dict) -> dict:

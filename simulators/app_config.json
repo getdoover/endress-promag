@@ -3,5 +3,6 @@
     "eh_meter_host": "1.tcp.au.ngrok.io",
     "eh_meter_port": 20779,
     "eh_meter_password": "0000",
-    "no_comms_timeout": 10
+    "no_comms_timeout": 10,
+    "eh_meter_serial_number": "X30CD520000"
 }
