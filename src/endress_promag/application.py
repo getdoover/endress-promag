@@ -11,6 +11,17 @@ from .eh_meter import EHMeter
 
 log = logging.getLogger()
 
+# A decorator to cache a value if it is not None
+def cached_value(func):
+    def wrapper(self):
+        result = func(self)
+        if result is None:
+            if not self.meter_offline:
+                return self._last_non_null.get(func.__name__, None)
+        self._last_non_null[func.__name__] = result
+        return result
+    return wrapper
+
 class EndressPromagApplication(Application):
     config: EndressPromagConfig  # not necessary, but helps your IDE provide autocomplete!
 
@@ -19,6 +30,9 @@ class EndressPromagApplication(Application):
 
         self.loop_target_period = 5 # seconds
         self.last_status_print = time.time()
+
+        self._last_non_null = {}
+        self._last_non_null_age = 0
 
         self.started: float = time.time()
         self.ui: EndressPromagUI = None
@@ -89,6 +103,7 @@ class EndressPromagApplication(Application):
         self.last_status_print = time.time()
 
     @property
+    @cached_value
     def volume_flow(self):
         value = self.eh_meter.get_value("Volume flow")
         if value is None:
@@ -96,6 +111,7 @@ class EndressPromagApplication(Application):
         return float(value)
     
     @property
+    @cached_value
     def mass_flow(self):
         value = self.eh_meter.get_value("Mass flow")
         if value is None:
@@ -103,6 +119,7 @@ class EndressPromagApplication(Application):
         return float(value)
     
     @property
+    @cached_value
     def conductivity(self):
         value = self.eh_meter.get_value("Conductivity")
         if value is None or value == "" or value == "-nan":
@@ -113,6 +130,7 @@ class EndressPromagApplication(Application):
             return None
 
     @property
+    @cached_value
     def totaliser_1(self):
         value = self.eh_meter.get_value("Totalizer value 1")
         if value is None:
@@ -123,7 +141,8 @@ class EndressPromagApplication(Application):
     def last_read_age(self):
         age = self.eh_meter.value_update_age("Totalizer value 1")
         if age is None:
-            age = time.time() - self.started
+            return self._last_non_null_age or time.time() - self.started
+        self._last_non_null_age = time.time() - age
         return age
 
     @property
