@@ -15,7 +15,7 @@ class EndressPromagUI:
         self.meter_error_warning = ui.WarningIndicator("meter_error_warning", f"{app.config.meter_name} Error", hidden=True)
 
     def fetch(self):
-        return self.volume_flow, self.mass_flow, self.totaliser_1, self.last_read_age, self.no_comms_warning, self.meter_error_warning
+        return self.volume_flow, self.mass_flow, self.conductivity, self.totaliser_1, self.last_read_age, self.no_comms_warning, self.meter_error_warning
 
     def update(self):
         self.volume_flow.update(self.app.volume_flow)
