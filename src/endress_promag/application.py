@@ -37,7 +37,9 @@ class EndressPromagApplication(Application):
     async def main_loop(self):
         await self.eh_meter.update()
         correct_serial = self.ensure_serial_number()
+        self.ensure_meter_online()
         self.print_status()
+        self.ui_manager.set_display_name(self.get_display_name())
         await self.update_tags()
         self.ui.update()
         if not correct_serial:
@@ -52,6 +54,18 @@ class EndressPromagApplication(Application):
         }
         await self.set_tags(update)
 
+    def get_display_name(self):
+        name = self.config.meter_name.value
+        if self.meter_offline:
+            name += " - Offline"
+        else:
+            flow = self.volume_flow
+            if flow is None:
+                name += " - No Flow"
+            else:
+                name += f" - {flow:.2f} m3/h"
+        return name
+
     def ensure_serial_number(self):
         if self.config.eh_meter_serial_number.value is None or self.config.eh_meter_serial_number.value == "":
             return True
@@ -61,6 +75,10 @@ class EndressPromagApplication(Application):
             # log.warning(f"Serial number mismatch: {serial_number} != {self.config.eh_meter_serial_number.value}")
             return False
         return True
+
+    def ensure_meter_online(self):
+        if self.meter_offline:
+            self.eh_meter.clear_values()
 
     def print_status(self):
         # If there hasn't been an update since the last print, print a warning
