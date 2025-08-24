@@ -3,6 +3,7 @@ import asyncio
 import json
 import time
 import base64
+import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 import websockets
@@ -40,13 +41,8 @@ def _auth_verify_aes(nonce: int, password: str) -> Tuple[str, str]:
     """
     What the UI sends for ACCESS_CODE_*: szAuth='none', field=<b64 CMAC( AES(nonce:password KDF), "Endress + Hauser")>
     """
-    padded = _pkcs7_pad16(f"{nonce}:{password}".encode("utf-8"))
-    o = bytes(range(16))
-    for i in range(0, len(padded), 16):
-        key = padded[i:i + 16]
-        cipher = AES.new(key, AES.MODE_ECB)
-        o = cipher.encrypt(o)
-    token = _cmac(o, b"Endress + Hauser")
+    key = _kdf_blockwise(f"{nonce}:{password}".encode("utf-8"))
+    token = _cmac(key, b"Endress + Hauser")
     return "none", base64.b64encode(token).decode("ascii")
 
 def _otk_token(smk_str: str, acc_code: int, nonce: int) -> str:
@@ -73,14 +69,15 @@ def _payload_has_values(payload: dict) -> bool:
     return False
 
 def _menu_entries(payload: dict) -> List[Tuple[str, str]]:
-    lst: List[Tuple[str, str]] = []
+    lst: List[Tuple[str, str, int]] = []
     menu = payload.get("Menu") or {}
     for ent in menu.get("Entries", []) or []:
         if isinstance(ent, dict):
             _id = ent.get("szID") or ent.get("ID") or ent.get("id")
-            _label = ent.get("szDescr") or ent.get("label") or ent.get("text")
+            _label = ent.get("szDescr") or ent.get("szVal") or ent.get("label")
+            _ul_pid = ent.get("ulPID") or 0
             if _id and _label:
-                lst.append((_id, _label))
+                lst.append((_id, _label, _ul_pid))
     return lst
 
 def _collect_values(node, out: Dict[str, Dict[str, Any]]):
@@ -89,13 +86,12 @@ def _collect_values(node, out: Dict[str, Dict[str, Any]]):
             label = str(node.get("szDescr") or "").strip()
             if label:
                 unit = node.get("szUnit") or node.get("szUnit2") or None
-                out[label] = {"value": node.get("szVal", node.get("szValue")), "unit": unit, "id": node.get("szID")}
+                out[label] = {"value": node.get("szVal", node.get("szValue")), "unit": unit, "id": node.get("szID"), "timestamp": time.time()}
         for v in node.values():
             _collect_values(v, out)
     elif isinstance(node, list):
         for v in node:
             _collect_values(v, out)
-
 
 # ----------------------- Client -----------------------
 
@@ -108,42 +104,46 @@ class EHMeter:
     - Auto re-login/reconnect once if session stalls
     """
 
-    def __init__(self, host: str, password: str = "0000", port: int = 80, swi_version: str = "411_V2_1_07"):
+    def __init__(self, host: str, password: str = "0000", port: int = 80, swi_version: str = "411_V2_1_07", debug: bool = False):
         self.host = host
         self.port = int(port)
         self.password = password
         self.swi_version = swi_version
+        self.debug = bool(debug)
 
         self.ws: Optional[websockets.WebSocketClientProtocol] = None
         self.smk_str: Optional[str] = None
         self.session: Dict[str, Any] = {}
         self.last_payload: Optional[dict] = None
 
+        self.values: Dict[str, Dict[str, Any]] = {}
+
         # timings
         self._gap = 0.15  # seconds between requests; too fast = empty Main
 
     # -------- public sync --------
 
-    def device_info(self) -> Dict[str, Any]:
-        async def _run():
-            for attempt in (1, 2):
-                async with self:
-                    p = await self._prime_and_login()
-                    info = self._scrape_info(p)
-                    if info.get("device_name") or attempt == 2:
-                        return info
-        return asyncio.run(_run())
+    async def update(self):
+        return await self.get_measured_values_async()
 
-    def measured_values(self) -> Dict[str, Dict[str, Any]]:
-        async def _run():
-            for attempt in (1, 2):
+    def get_measured_values(self) -> Dict[str, Dict[str, Any]]:
+        asyncio.run(self.get_measured_values_async())
+        return self.values
+
+    async def get_measured_values_async(self) -> Dict[str, Dict[str, Any]]:
+        for attempt in (1, 2):
+            try:
                 async with self:
                     p = await self._prime_and_login()
                     p = await self._ensure_measurements_page(p)
-                    vals = self._extract_values(p)
-                    if vals or attempt == 2:
-                        return vals
-        return asyncio.run(_run())
+                    self.values.update(self._extract_values(p))
+                    await self._logout(p)
+                    if self.values or attempt == 2:
+                        return self.values
+            except Exception as e:
+                print("ERROR Retrieving EH Measured Values : ", e)
+                if self.debug:
+                    traceback.print_exc()
 
     # -------- async context --------
 
@@ -192,9 +192,9 @@ class EHMeter:
         await asyncio.sleep(self._gap)  # pacing
         return payload
 
-    def _decorate(self, msg: dict, *, reqtype: str = "get") -> dict:
+    def _decorate(self, msg: dict, *, reqtype: str = "get", ul_pid: Optional[int] = None) -> dict:
         msg.setdefault("ServletName", "servlet/main.json")
-        msg.setdefault("ulPID", self.session.get("ulPID", 20007))
+        msg.setdefault("ulPID", ul_pid or self.session.get("ulPID", 20007))
         msg.setdefault("ulAccCode", self.session.get("ulAccCode", 0))
         msg.setdefault("ReqType", reqtype)
         msg.setdefault("SWIVersion", self.session.get("SWIVersion", self.swi_version))
@@ -203,17 +203,54 @@ class EHMeter:
         msg.setdefault("Time", int(time.time()))
 
         # Always compute using the **latest** session values
-        if self.smk_str:
-            msg["szResAuth"] = _res_auth(
-                msg["ServletName"],
-                self.smk_str,
-                int(self.session.get("ulAccCode", 0)),
-                int(self.session.get("ulFilePostNonce", 0) or 0),
-            )
         nonce = self.session.get("ulNONCE")
-        if self.smk_str and isinstance(nonce, int):
+
+        # Detect if this is the password submission step
+        is_login_step = False
+        pairs = msg.get("Pairs") or []
+        if isinstance(pairs, list):
+            for p in pairs:
+                if isinstance(p, dict):
+                    for k in p.keys():
+                        if isinstance(k, str) and (k.startswith("ACCESS_CODE") or k == "PASSWORD_ID"):
+                            is_login_step = True
+                            break
+                if is_login_step:
+                    break
+
+        # Set Status to match typical firmware behavior
+        if reqtype == "set":
+            msg["Status"] = 3
+        elif reqtype == "poll":
+            msg["Status"] = 0
+
+        # Token logic aligned with HAR behavior:
+        # - During login step: include ulOtkNonce and set szOtkAuthToken to "?no_pw"; do not send szResAuth
+        # - After login: compute and send OTK (and szResAuth) using current session values
+        if isinstance(nonce, int):
             msg["ulOtkNonce"] = int(nonce)
+        if is_login_step:
+            if self.smk_str and isinstance(nonce, int):
+                msg["szOtkAuthToken"] = _otk_token(self.smk_str, int(self.session.get("ulAccCode", 0)), int(nonce))
+                msg["szResAuth"] = _res_auth(
+                    msg["ServletName"],
+                    self.smk_str,
+                    int(self.session.get("ulAccCode", 0)),
+                    int(self.session.get("ulFilePostNonce", 0) or 0),
+                )
+            else:
+                msg["szOtkAuthToken"] = "?no_pw"
+        elif self.smk_str and isinstance(nonce, int):
             msg["szOtkAuthToken"] = _otk_token(self.smk_str, int(self.session.get("ulAccCode", 0)), int(nonce))
+            # msg["szResAuth"] = _res_auth(
+            #     msg["ServletName"],
+            #     self.smk_str,
+            #     int(self.session.get("ulAccCode", 0)),
+            #     int(self.session.get("ulFilePostNonce", 0) or 0),
+            # )
+        elif isinstance(nonce, int) and not self.smk_str:
+            # Pre-login non-SET requests often include a placeholder token
+            msg["szOtkAuthToken"] = "?no_pw"
         return msg
 
     # -------- message builders --------
@@ -241,13 +278,17 @@ class EHMeter:
     def _msg_poll(self) -> dict:
         return self._decorate({"ServletName": "servlet/main.json"}, reqtype="poll")
 
-    def _msg_press(self, button_id: str) -> dict:
+    def _msg_press(self, button_id: str, ul_pid: int) -> dict:
         return self._decorate({
             "ServletName": "servlet/main.json",
-            "Pairs": [{button_id: {"szID": button_id}}],
-        }, reqtype="button")
+            "Pairs": [{"szID": button_id}],
+            "Method": "POST",
+        }, reqtype="get", ul_pid=ul_pid)
 
-    def _msg_set_password(self, access_code_id: str, *, nonce: int, enc_type: int, password: str) -> dict:
+    async def _logout(self, payload: dict) -> dict:
+        return await self._click_menu(payload, "Logout")
+
+    def _msg_set_password(self, access_code_id: str, *, nonce: int, enc_type: int, password: str, extra_pairs: Optional[List[Dict[str, Any]]] = None) -> dict:
         pairs = [{"ulNONCE": int(nonce)}, {"ulEncType": int(enc_type)}]
         if enc_type == 1:
             szAuth, field_val = _auth_verify_aes(nonce, password)
@@ -255,6 +296,8 @@ class EHMeter:
             szAuth, field_val = "none", password
         pairs.append({"szAuth": szAuth})
         pairs.append({access_code_id: field_val})
+        if extra_pairs:
+            pairs = list(extra_pairs) + pairs
         return self._decorate({
             "ServletName": "servlet/main.json",
             "Pairs": pairs,
@@ -271,8 +314,9 @@ class EHMeter:
         # login if ACCESS_CODE present
         p = await self._maybe_login(p)
 
-        # refresh core sections after login
-        p = await self._send(self._msg_get("header", "menu", "breadcrumb", "main"))
+        entries = (p.get("Menu", {}) or {}).get("Entries", []) or []
+        if not entries and self.debug:
+            print("WARNING: Not logged in")
         return p
 
     async def _maybe_updates(self, payload: dict) -> dict:
@@ -299,71 +343,45 @@ class EHMeter:
 
         self.smk_str = _derive_smk(self.password)
 
-        # set password + press login
-        await self._send(self._msg_set_password(access_code_id, nonce=int(nonce), enc_type=enc_type, password=self.password))
-        await self._send(self._msg_press("ID_LoginButton"))
-        return await self._send(self._msg_get("header", "menu", "breadcrumb", "main"))
+        extra_pairs = [{"PASSWORD_ID": "Maintenance"}]
+        p = await self._send(self._msg_set_password(
+            access_code_id,
+            nonce=int(nonce),
+            enc_type=enc_type,
+            password=self.password,
+            extra_pairs=extra_pairs or None,
+        ))
+
+        return p
 
     async def _ensure_measurements_page(self, payload: dict) -> dict:
         """
         Make values appear by alternating poll/get a few times; if still empty,
         re-navigate to likely menus and repeat.
         """
-        # fast path
-        p = await self._pump_until_values(payload, tries=5)
-        if _payload_has_values(p):
-            return p
 
-        # navigate likely menus
-        for kws in (("measured", "measurement", "process"),
-                    ("diagnostic", "status"),
-                    ("overview", "home"),
-                    ("total", "totaliser", "totalizer")):
-            nxt = await self._click_menu(payload, *kws)
-            if nxt:
-                p = await self._pump_until_values(nxt, tries=5)
-                if _payload_has_values(p):
-                    return p
-                payload = p
-
-        # brute-force rest of menu entries
-        for _id, _label in _menu_entries(payload):
-            if any(w in _label.lower() for w in (
-                "language","web server","info","identification","device information",
-                "maintenance","access","configuration","setup","network","communication",
-                "simulation","service","factory","password"
-            )):
-                continue
-            page = await self._send(self._msg_press(_id))
-            page = await self._send(self._msg_get("main"))
-            p = await self._pump_until_values(page, tries=4)
-            if _payload_has_values(p):
-                return p
+        nxt = await self._click_menu(payload, "Measured")
+        if nxt and _payload_has_values(nxt):
+            return nxt
 
         return payload
 
-    async def _pump_until_values(self, payload: dict, *, tries: int = 5) -> dict:
-        """
-        Alternate poll/get(main) a few times with gaps; this is the key to avoid
-        empty 'Main' after login on some firmwares.
-        """
-        best = payload
-        for _ in range(tries):
-            best = await self._send(self._msg_poll())
-            best = await self._send(self._msg_get("main"))
-            if _payload_has_values(best):
-                return best
-        # last-chance: one more full refresh
-        best = await self._send(self._msg_get("header", "menu", "breadcrumb", "main"))
-        return best
-
     async def _click_menu(self, payload: dict, *keywords: str) -> Optional[dict]:
-        for _id, _label in _menu_entries(payload):
-            if any(k in _label.lower() for k in keywords):
-                page = await self._send(self._msg_press(_id))
-                page = await self._send(self._msg_get("header", "menu", "main"))
+        for _id, _label, _ul_pid in _menu_entries(payload):
+            if any(k.lower() in _label.lower() for k in keywords):
+                request = self._msg_press(_id, _ul_pid)
+                page = await self._send(request)
                 return page
         return None
+    
+    def get_value(self, value_id: str) -> Optional[float]:
+        return self.values.get(value_id, {}).get("value", None)
+
+    def value_update_age(self, value_id: str) -> Optional[float]:
+        ts = self.values.get(value_id, {}).get("timestamp", None)
+        if ts is None:
+            return None
+        return round(time.time() - ts, 2)
 
     # -------- parse & scrape --------
 
@@ -385,10 +403,33 @@ class EHMeter:
 # ----------------------- CLI -----------------------
 
 if __name__ == "__main__":
-    meter = EHMeter("192.168.1.212", password="0000", port=80)
-    print("Device info:", meter.device_info())
-    vals = meter.measured_values()
+    meter = EHMeter("1.tcp.au.ngrok.io", password="0000", port=20779, debug=False)
+    vals = meter.get_measured_values()
     print(f"Found {len(vals)} measured values")
     for k, v in vals.items():
         unit = f" {v['unit']}" if v["unit"] else ""
         print(f"{k}: {v['value']}{unit}")
+
+    print("")
+    print(f"Last update age (s): {meter.value_update_age('Totalizer value 1')}")
+
+
+    ## Example Output:
+    # 
+    # Found 14 measured values
+    # Device name: Promag 400
+    # Device tag: Promag
+    # Status signal: Device ok
+    # Output curr. 1: 4.00 mA
+    # Volume flow: 0.0000 m³/h
+    # Mass flow: 0.0000 kg/min
+    # Correct.vol.flow: 0.0000 Nl/h
+    # Conductivity: -nan µS/cm
+    # Totalizer value 1: 3481.260 m³
+    # Totalizer overflow 1: 0
+    # Totalizer value 2: 3481260 dm³
+    # Totalizer overflow 2: 0
+    # Totalizer value 3: 3481260 dm³
+    # Totalizer overflow 3: 0
+
+    # Last update age (s): 0.67

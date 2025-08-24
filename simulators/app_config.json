@@ -1,6 +1,7 @@
 {
-    "simulator_app_key": "sim_app_key",
-    "digital_input_count": 1,
-    "digital_output_count": 2,
-    "a_funny_message": "yeeha"
+    "meter_name": "Test Meter",
+    "eh_meter_host": "1.tcp.au.ngrok.io",
+    "eh_meter_port": 20779,
+    "eh_meter_password": "0000",
+    "no_comms_timeout": 10
 }

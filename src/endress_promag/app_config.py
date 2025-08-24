@@ -5,10 +5,13 @@ from pydoover import config
 
 class EndressPromagConfig(config.Schema):
     def __init__(self):
-        self.outputs_enabled = config.Boolean("Digital Outputs Enabled", default=True)
-        self.funny_message = config.String("A Funny Message")  # this will be required as no default given.
+        self.meter_name = config.String("Meter Name", default="Meter 1")
 
-        self.sim_app_key = config.Application("Simulator App Key", description="The app key for the simulator")
+        self.eh_meter_host = config.String("EH Meter Host", default="1.tcp.au.ngrok.io")
+        self.eh_meter_port = config.Integer("EH Meter Port", default=80)
+        self.eh_meter_password = config.String("EH Meter Password", default="0000")
+
+        self.no_comms_timeout = config.Integer("No Comms Timeout", default=10, description="Time in minutes after which the meter is considered to be offline")
 
 
 def export():

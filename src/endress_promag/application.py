@@ -6,7 +6,7 @@ from pydoover import ui
 
 from .app_config import EndressPromagConfig
 from .app_ui import EndressPromagUI
-from .app_state import EndressPromagState
+from .eh_meter import EHMeter
 
 log = logging.getLogger()
 
@@ -16,40 +16,69 @@ class EndressPromagApplication(Application):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.loop_target_period = 5 # seconds
+
         self.started: float = time.time()
         self.ui: EndressPromagUI = None
-        self.state: EndressPromagState = None
 
     async def setup(self):
-        self.ui = EndressPromagUI()
-        self.state = EndressPromagState()
+        self.ui = EndressPromagUI(self)
+        self.ui_manager.set_display_name(self.config.meter_name.value)
         self.ui_manager.add_children(*self.ui.fetch())
 
-    async def main_loop(self):
-        log.info(f"State is: {self.state.state}")
-
-        # a random value we set inside our simulator. Go check it out in simulators/sample!
-        random_value = self.get_tag("random_value", self.config.sim_app_key.value)
-        log.info("Random value from simulator: %s", random_value)
-
-        self.ui.update(
-            True,
-            random_value,
-            time.time() - self.started,
+        self.eh_meter = EHMeter(
+            host=self.config.eh_meter_host.value,
+            password=self.config.eh_meter_password.value,
+            port=self.config.eh_meter_port.value,
         )
 
-    @ui.callback("send_alert")
-    async def on_send_alert(self, new_value):
-        log.info(f"Sending alert: {self.ui.test_output.current_value}")
-        await self.publish_to_channel("significantAlerts", self.ui.test_output.current_value)
-        self.ui.send_alert.coerce(None)
+    async def main_loop(self):
+        await self.eh_meter.update()
+        self.print_status()
+        self.ui.update()
 
-    @ui.callback("test_message")
-    async def on_text_parameter_change(self, new_value):
-        log.info(f"New value for test message: {new_value}")
-        # Set the value as an output to the corresponding variable is this case
-        self.ui.test_output.update(new_value)
+    async def update_tags(self):
+        update = {
+            "flow_m3h": self.volume_flow,
+            "flow_kgmin": self.mass_flow,
+            "totaliser_1": self.totaliser_1,
+        }
+        await self.set_tags(update)
 
-    @ui.callback("charge_mode")
-    async def on_state_command(self, new_value):
-        log.info(f"New value for state command: {new_value}")
+    def print_status(self):
+        if self.last_read_age > 1:
+            log.warning("No connection to meter")
+        else:
+            log.info(f"Volume flow: {self.volume_flow}, Totaliser 1: {self.totaliser_1}")
+
+    @property
+    def volume_flow(self):
+        value = self.eh_meter.get_value("Volume flow")
+        if value is None:
+            return None
+        return float(value)
+    
+    @property
+    def mass_flow(self):
+        value = self.eh_meter.get_value("Mass flow")
+        if value is None:
+            return None
+        return float(value)
+    
+    @property
+    def totaliser_1(self):
+        value = self.eh_meter.get_value("Totalizer value 1")
+        if value is None:
+            return None
+        return float(value)
+
+    @property
+    def last_read_age(self):
+        age = self.eh_meter.value_update_age("Totalizer value 1")
+        if age is None:
+            age = time.time() - self.started
+        return age
+
+    @property
+    def meter_offline(self):
+        return self.last_read_age > self.config.no_comms_timeout.value * 60

@@ -9,7 +9,7 @@
         "long_description": "README.md",
         "depends_on": [],
         "owner_org_key": "",
-        "image_name": "ghcr.io/getdoover/endress_promag:latest",
+        "image_name": "ghcr.io/getdoover/endress_promag:main",
         "container_registry_profile_key": "",
         "build_args": "--platform linux/amd64,linux/arm64",
         "config_schema": {
@@ -18,35 +18,50 @@
             "title": "Application Config",
             "type": "object",
             "properties": {
-                "digital_outputs_enabled": {
-                    "title": "Digital Outputs Enabled",
-                    "x-name": "digital_outputs_enabled",
-                    "x-hidden": false,
-                    "type": "boolean",
-                    "default": true
-                },
-                "a_funny_message": {
-                    "title": "A Funny Message",
-                    "x-name": "a_funny_message",
-                    "x-hidden": false,
-                    "type": "string"
-                },
-                "simulator_app_key": {
-                    "format": "doover-application",
-                    "title": "Simulator App Key",
-                    "x-name": "simulator_app_key",
+                "meter_name": {
+                    "title": "Meter Name",
+                    "x-name": "meter_name",
                     "x-hidden": false,
                     "type": "string",
-                    "description": "The app key for the simulator"
+                    "default": "Meter 1"
+                },
+                "eh_meter_host": {
+                    "title": "EH Meter Host",
+                    "x-name": "eh_meter_host",
+                    "x-hidden": false,
+                    "type": "string",
+                    "default": "1.tcp.au.ngrok.io"
+                },
+                "eh_meter_port": {
+                    "title": "EH Meter Port",
+                    "x-name": "eh_meter_port",
+                    "x-hidden": false,
+                    "type": "integer",
+                    "default": 80
+                },
+                "eh_meter_password": {
+                    "title": "EH Meter Password",
+                    "x-name": "eh_meter_password",
+                    "x-hidden": false,
+                    "type": "string",
+                    "default": "0000"
+                },
+                "no_comms_timeout": {
+                    "title": "No Comms Timeout",
+                    "x-name": "no_comms_timeout",
+                    "x-hidden": false,
+                    "type": "integer",
+                    "description": "Time in minutes after which the meter is considered to be offline",
+                    "default": 10
                 }
             },
             "additionalElements": true,
-            "required": [
-                "a_funny_message",
-                "simulator_app_key"
-            ]
+            "required": []
         },
         "owner_org": "36a22e32-ab81-4a39-b400-869d532a052d",
-        "container_registry_profile": "88953909-e9c4-4f81-9ec0-56239d4b0a2e"
+        "container_registry_profile": "88953909-e9c4-4f81-9ec0-56239d4b0a2e",
+        "key": "379341d5-9580-4a69-ae7a-ba8de926c69d",
+        "repo_branch": "main",
+        "staging_config": {}
     }
 }

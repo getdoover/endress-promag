@@ -2,35 +2,24 @@ from pydoover import ui
 
 
 class EndressPromagUI:
-    def __init__(self):
-        self.is_working = ui.BooleanVariable("is_working", "We Working?")
-        self.uptime = ui.DateTimeVariable("uptime", "Started")
+    def __init__(self, app):
+        self.app = app
 
-        self.send_alert = ui.Action("send_alert", "Send message as alert", position=1)
-        self.text_parameter = ui.TextParameter("test_message", "Put in a message")
+        self.volume_flow = ui.NumericVariable("volume_flow", "Flow m3/h", precision=2)
+        self.mass_flow = ui.NumericVariable("mass_flow", "Flow kg/min", precision=2)
+        self.totaliser_1 = ui.NumericVariable("totaliser_1", "Totaliser 1 (m3)", precision=2)
+        self.last_read_age = ui.DateTimeVariable("last_read_age", "Time since last read")
 
-        self.test_output = ui.TextVariable("test_output", "This is message we got")
-
-        self.battery = ui.Submodule("battery", "Battery Module")
-        self.battery_voltage = ui.NumericVariable(
-            "voltage", "Battery Voltage", precision=2, ranges=[
-                ui.Range("Low", 0, 10, ui.Colour.red),
-                ui.Range("Normal", 10, 20, ui.Colour.green),
-                ui.Range("High", 20, 30, ui.Colour.blue),
-            ])
-
-        self.battery_low_voltage_alert = ui.NumericParameter("low_voltage_alert", "Low Voltage Alert")
-        self.battery_charge_mode = ui.StateCommand("charge_mode", "Charge Mode", user_options=[
-            ui.Option("charge", "Charge"),
-            ui.Option("discharge", "Discharge"),
-            ui.Option("idle", "Idle")
-        ])
-        self.battery.add_children(self.battery_voltage, self.battery_low_voltage_alert, self.battery_charge_mode)
+        self.no_comms_warning = ui.WarningIndicator("no_comms_warning", f"No Comms To {app.config.meter_name}", hidden=True)
+        self.meter_error_warning = ui.WarningIndicator("meter_error_warning", f"{app.config.meter_name} Error", hidden=True)
 
     def fetch(self):
-        return self.is_working, self.uptime, self.send_alert, self.text_parameter, self.test_output, self.battery
+        return self.volume_flow, self.mass_flow, self.totaliser_1, self.no_comms_warning, self.meter_error_warning
 
-    def update(self, is_working, voltage, uptime):
-        self.is_working.update(is_working)
-        self.uptime.update(uptime)
-        self.battery_voltage.update(voltage)
+    def update(self):
+        self.volume_flow.update(self.app.volume_flow)
+        self.mass_flow.update(self.app.mass_flow)
+        self.totaliser_1.update(self.app.totaliser_1)
+        self.last_read_age.update(self.app.last_read_age)
+
+        self.no_comms_warning.hidden = not self.app.meter_offline
