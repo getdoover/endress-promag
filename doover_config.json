@@ -45,6 +45,14 @@
                     "type": "string",
                     "default": "0000"
                 },
+                "max_flow": {
+                    "title": "Max Flow",
+                    "x-name": "max_flow",
+                    "x-hidden": false,
+                    "type": "number",
+                    "description": "Maximum flow in m3/h. Only used for display purposes. Leave blank to disable.",
+                    "default": null
+                },
                 "eh_meter_serial_number": {
                     "title": "EH Meter Serial Number",
                     "x-name": "eh_meter_serial_number",
