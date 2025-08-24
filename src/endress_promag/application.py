@@ -141,7 +141,9 @@ class EndressPromagApplication(Application):
     def last_read_age(self):
         age = self.eh_meter.value_update_age("Totalizer value 1")
         if age is None:
-            return self._last_non_null_age or time.time() - self.started
+            if self._last_non_null_age is not None:
+                return time.time() - self._last_non_null_age
+            return time.time() - self.started
         self._last_non_null_age = time.time() - age
         return age
 
