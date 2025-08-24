@@ -32,7 +32,7 @@ class EndressPromagApplication(Application):
         self.last_status_print = time.time()
 
         self._last_non_null = {}
-        self._last_non_null_age = 0
+        self._last_non_null_age = None
 
         self.started: float = time.time()
         self.ui: EndressPromagUI = None
