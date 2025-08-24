@@ -1,5 +1,6 @@
 import logging
 import time
+import asyncio
 
 from pydoover.docker import Application
 from pydoover import ui
@@ -34,8 +35,12 @@ class EndressPromagApplication(Application):
 
     async def main_loop(self):
         await self.eh_meter.update()
+        correct_serial = self.ensure_serial_number()
         self.print_status()
         self.ui.update()
+        if not correct_serial:
+            log.warning("Serial number mismatch, Sleeping Longer")
+            await asyncio.sleep(20)
 
     async def update_tags(self):
         update = {
@@ -44,6 +49,16 @@ class EndressPromagApplication(Application):
             "totaliser_1": self.totaliser_1,
         }
         await self.set_tags(update)
+
+    def ensure_serial_number(self):
+        if self.config.eh_meter_serial_number.value is None or self.config.eh_meter_serial_number.value == "":
+            return True
+        serial_number = self.eh_meter.get_value("Serial number")
+        if not serial_number or serial_number != self.config.eh_meter_serial_number.value:
+            self.eh_meter.clear_values()
+            # log.warning(f"Serial number mismatch: {serial_number} != {self.config.eh_meter_serial_number.value}")
+            return False
+        return True
 
     def print_status(self):
         if self.last_read_age > 1:

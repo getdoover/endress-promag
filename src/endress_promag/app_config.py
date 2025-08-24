@@ -11,6 +11,8 @@ class EndressPromagConfig(config.Schema):
         self.eh_meter_port = config.Integer("EH Meter Port", default=80)
         self.eh_meter_password = config.String("EH Meter Password", default="0000")
 
+        self.eh_meter_serial_number = config.String("EH Meter Serial Number", default=None, description="OPTIONAL: If provided, any meter not matching this serial number will be ignored")
+
         self.no_comms_timeout = config.Integer("No Comms Timeout", default=10, description="Time in minutes after which the meter is considered to be offline")
 
 

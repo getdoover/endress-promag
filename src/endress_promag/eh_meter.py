@@ -137,6 +137,8 @@ class EHMeter:
                     p = await self._prime_and_login()
                     p = await self._ensure_measurements_page(p)
                     self.values.update(self._extract_values(p))
+                    p = await self._ensure_network_page(p)
+                    self.values.update(self._extract_values(p))
                     await self._logout(p)
                     if self.values or attempt == 2:
                         return self.values
@@ -355,15 +357,15 @@ class EHMeter:
         return p
 
     async def _ensure_measurements_page(self, payload: dict) -> dict:
-        """
-        Make values appear by alternating poll/get a few times; if still empty,
-        re-navigate to likely menus and repeat.
-        """
-
         nxt = await self._click_menu(payload, "Measured")
         if nxt and _payload_has_values(nxt):
             return nxt
-
+        return payload
+    
+    async def _ensure_network_page(self, payload: dict) -> dict:
+        nxt = await self._click_menu(payload, "Network")
+        if nxt and _payload_has_values(nxt):
+            return nxt
         return payload
 
     async def _click_menu(self, payload: dict, *keywords: str) -> Optional[dict]:
@@ -376,6 +378,9 @@ class EHMeter:
     
     def get_value(self, value_id: str) -> Optional[float]:
         return self.values.get(value_id, {}).get("value", None)
+    
+    def clear_values(self):
+        self.values.clear()
 
     def value_update_age(self, value_id: str) -> Optional[float]:
         ts = self.values.get(value_id, {}).get("timestamp", None)
