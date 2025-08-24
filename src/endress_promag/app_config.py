@@ -7,7 +7,7 @@ class EndressPromagConfig(config.Schema):
     def __init__(self):
         self.meter_name = config.String("Meter Name", default="Meter 1")
 
-        self.eh_meter_host = config.String("EH Meter Host", default="1.tcp.au.ngrok.io")
+        self.eh_meter_host = config.String("EH Meter Host")
         self.eh_meter_port = config.Integer("EH Meter Port", default=80)
         self.eh_meter_password = config.String("EH Meter Password", default="0000")
 

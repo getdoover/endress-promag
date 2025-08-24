@@ -29,8 +29,7 @@
                     "title": "EH Meter Host",
                     "x-name": "eh_meter_host",
                     "x-hidden": false,
-                    "type": "string",
-                    "default": "1.tcp.au.ngrok.io"
+                    "type": "string"
                 },
                 "eh_meter_port": {
                     "title": "EH Meter Port",
@@ -64,7 +63,9 @@
                 }
             },
             "additionalElements": true,
-            "required": []
+            "required": [
+                "eh_meter_host"
+            ]
         },
         "owner_org": "36a22e32-ab81-4a39-b400-869d532a052d",
         "container_registry_profile": "88953909-e9c4-4f81-9ec0-56239d4b0a2e",
