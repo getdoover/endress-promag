@@ -14,7 +14,7 @@ class EndressPromagUI:
                 ui.Range(min_val=int(max_flow*0.8), max_val=int(max_flow), colour=ui.Colour.yellow),
             ]
 
-        self.volume_flow = ui.NumericVariable("volume_flow", "Flow m3/h", precision=2, ranges=volume_ranges)
+        self.volume_flow = ui.NumericVariable("volume_flow", "Flow m3/h", precision=2, ranges=volume_ranges, form="radialGauge" if volume_ranges else None)
         self.mass_flow = ui.NumericVariable("mass_flow", "Flow kg/min", precision=2)
         self.conductivity = ui.NumericVariable("conductivity", "Conductivity uS/cm", precision=2)
         self.totaliser_1 = ui.NumericVariable("totaliser_1", "Totaliser 1 (m3)", precision=2)
