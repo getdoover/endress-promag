@@ -60,7 +60,7 @@ class EndressPromagApplication(Application):
             name += " - Offline"
         else:
             flow = self.volume_flow
-            if flow is None:
+            if flow is None or flow == 0 or flow < 0:
                 name += " - No Flow"
             else:
                 name += f" - {flow:.2f} m3/h"
