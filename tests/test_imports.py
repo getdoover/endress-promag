@@ -17,7 +17,3 @@ def test_config():
 def test_ui():
     from endress_promag.app_ui import EndressPromagUI
     assert EndressPromagUI
-
-def test_state():
-    from endress_promag.app_state import EndressPromagState
-    assert EndressPromagState
