@@ -5,6 +5,8 @@ class EndressPromagUI:
     def __init__(self, app):
         self.app = app
 
+        name = app.config.meter_name.value.replace(" ", "_").lower()
+
         volume_ranges = None
         if app.config.max_flow.value is not None:
             max_flow = app.config.max_flow.value
@@ -14,14 +16,14 @@ class EndressPromagUI:
                 ui.Range(min_val=int(max_flow*0.8), max_val=int(max_flow), colour=ui.Colour.yellow),
             ]
 
-        self.volume_flow = ui.NumericVariable("volume_flow", "Flow m3/h", precision=2, ranges=volume_ranges, form="radialGauge" if volume_ranges else None)
-        self.mass_flow = ui.NumericVariable("mass_flow", "Flow kg/min", precision=2)
-        self.conductivity = ui.NumericVariable("conductivity", "Conductivity uS/cm", precision=2)
-        self.totaliser_1 = ui.NumericVariable("totaliser_1", "Totaliser 1 (m3)", precision=2)
-        self.last_read_age = ui.DateTimeVariable("last_read_age", "Time since last read")
+        self.volume_flow = ui.NumericVariable(f"{name}_volume_flow", "Flow m3/h", precision=2, ranges=volume_ranges, form="radialGauge" if volume_ranges else None)
+        self.mass_flow = ui.NumericVariable(f"{name}_mass_flow", "Flow kg/min", precision=2)
+        self.conductivity = ui.NumericVariable(f"{name}_conductivity", "Conductivity uS/cm", precision=2)
+        self.totaliser_1 = ui.NumericVariable(f"{name}_totaliser_1", "Totaliser 1 (m3)", precision=2)
+        self.last_read_age = ui.DateTimeVariable(f"{name}_last_read_age", "Time since last read")
 
-        self.no_comms_warning = ui.WarningIndicator("no_comms_warning", f"No Comms To {app.config.meter_name.value}", hidden=True)
-        self.meter_error_warning = ui.WarningIndicator("meter_error_warning", f"{app.config.meter_name.value} Error", hidden=True)
+        self.no_comms_warning = ui.WarningIndicator(f"{name}_no_comms_warning", f"No Comms To {app.config.meter_name.value}", hidden=True)
+        self.meter_error_warning = ui.WarningIndicator(f"{name}_meter_error_warning", f"{app.config.meter_name.value} Error", hidden=True)
 
     def fetch(self):
         return self.volume_flow, self.mass_flow, self.conductivity, self.totaliser_1, self.last_read_age, self.no_comms_warning, self.meter_error_warning

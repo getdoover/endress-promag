@@ -71,13 +71,13 @@ class EndressPromagApplication(Application):
     def get_display_name(self):
         name = self.config.meter_name.value
         if self.meter_offline:
-            name += " - Offline"
+            name += " : Offline"
         else:
             flow = self.volume_flow
-            if flow is None or flow == 0 or flow < 0:
-                name += " - No Flow"
+            if flow is None or flow == 0:
+                name += " : No Flow"
             else:
-                name += f" - {flow:.2f} m3/h"
+                name += f" : {flow:.2f} m3/h"
         return name
 
     def ensure_serial_number(self):
