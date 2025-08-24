@@ -11,8 +11,8 @@ class EndressPromagUI:
         self.totaliser_1 = ui.NumericVariable("totaliser_1", "Totaliser 1 (m3)", precision=2)
         self.last_read_age = ui.DateTimeVariable("last_read_age", "Time since last read")
 
-        self.no_comms_warning = ui.WarningIndicator("no_comms_warning", f"No Comms To {app.config.meter_name}", hidden=True)
-        self.meter_error_warning = ui.WarningIndicator("meter_error_warning", f"{app.config.meter_name} Error", hidden=True)
+        self.no_comms_warning = ui.WarningIndicator("no_comms_warning", f"No Comms To {app.config.meter_name.value}", hidden=True)
+        self.meter_error_warning = ui.WarningIndicator("meter_error_warning", f"{app.config.meter_name.value} Error", hidden=True)
 
     def fetch(self):
         return self.volume_flow, self.mass_flow, self.conductivity, self.totaliser_1, self.last_read_age, self.no_comms_warning, self.meter_error_warning
