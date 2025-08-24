@@ -46,6 +46,14 @@
                     "type": "string",
                     "default": "0000"
                 },
+                "eh_meter_serial_number": {
+                    "title": "EH Meter Serial Number",
+                    "x-name": "eh_meter_serial_number",
+                    "x-hidden": false,
+                    "type": "string",
+                    "description": "OPTIONAL: If provided, any meter not matching this serial number will be ignored",
+                    "default": null
+                },
                 "no_comms_timeout": {
                     "title": "No Comms Timeout",
                     "x-name": "no_comms_timeout",
