@@ -9,7 +9,7 @@
         "long_description": "README.md",
         "depends_on": [],
         "owner_org_key": "",
-        "image_name": "ghcr.io/getdoover/endress-promag:main",
+        "image_name": "ghcr.io/getdoover/endress-promag:dv1",
         "container_registry_profile_key": "",
         "build_args": "--platform linux/amd64,linux/arm64",
         "config_schema": {
