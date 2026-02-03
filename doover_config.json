@@ -2,6 +2,8 @@
     "endress_promag": {
         "name": "endress_promag",
         "display_name": "Endress Promag",
+        "icon_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwXU_2hrgYDeDg_4Y8Ko54eOcsk3SdKtLSZA&s",
+        "banner_url": "https://www.us.endress.com/images/logo/EH_Logo-d9672165.svg",
         "type": "DEV",
         "visibility": "PUB",
         "allow_many": true,
