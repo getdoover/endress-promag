@@ -274,6 +274,7 @@ class ByteOrder(IntEnum):
     ORDER_2301 = 2
     ORDER_1032 = 3
 
+DEFAULT_BYTE_ORDER = ByteOrder.ORDER_1032
 
 class BluetoothMode(IntEnum):
     ENABLE = 1
@@ -457,7 +458,7 @@ class ProMag800Registers:
 # Helper functions
 # =============================================================================
 
-def registers_to_float(reg_high: int, reg_low: int, byte_order: ByteOrder = ByteOrder.ORDER_0123) -> float:
+def registers_to_float(reg_high: int, reg_low: int, byte_order: ByteOrder = DEFAULT_BYTE_ORDER) -> float:
     """
     Convert two 16-bit registers to a 32-bit IEEE 754 float.
 
@@ -487,7 +488,7 @@ def registers_to_float(reg_high: int, reg_low: int, byte_order: ByteOrder = Byte
     return struct.unpack('>f', packed)[0]
 
 
-def float_to_registers(value: float, byte_order: ByteOrder = ByteOrder.ORDER_0123) -> tuple[int, int]:
+def float_to_registers(value: float, byte_order: ByteOrder = DEFAULT_BYTE_ORDER) -> tuple[int, int]:
     """
     Convert a 32-bit float to two 16-bit registers.
 
@@ -568,7 +569,7 @@ class ProMag800StateRecord:
     and provides property-based access to interpreted meter data.
     """
 
-    def __init__(self, register_values: dict[int, int], byte_order: ByteOrder = ByteOrder.ORDER_0123):
+    def __init__(self, register_values: dict[int, int], byte_order: ByteOrder = DEFAULT_BYTE_ORDER):
         """
         Initialize state record with raw register values.
 
@@ -1215,7 +1216,7 @@ class ProMag800StateStore:
     provides access to current and historical state data.
     """
 
-    def __init__(self, byte_order: ByteOrder = ByteOrder.ORDER_0123, max_records: int = 100):
+    def __init__(self, byte_order: ByteOrder = DEFAULT_BYTE_ORDER, max_records: int = 100):
         """
         Initialize the state store.
 
@@ -1313,7 +1314,7 @@ class ProMag800WriteCommands:
     suitable for use with a Doover modbus interface.
     """
 
-    def __init__(self, byte_order: ByteOrder = ByteOrder.ORDER_0123):
+    def __init__(self, byte_order: ByteOrder = DEFAULT_BYTE_ORDER):
         self._byte_order = byte_order
 
     def reset_totalizer(self, index: int) -> dict[int, int]:
