@@ -25,7 +25,7 @@ MODBUS_REGISTER_BLOCKS = [
     # Measured values and units (2009-2130)
     (2009, 2),      # Volume flow
 
-    (2099, 32),      # Volume flow unit / volume unit / conductivity unit / temperature unit / pressure unit
+    # (2099, 32),      # Volume flow unit / volume unit / conductivity unit / temperature unit / pressure unit
     # (2099, 2),      # Conductivity
     # (2103, 2),      # Volume flow unit, Volume unit
     # (2109, 1),      # Temperature unit
@@ -42,19 +42,19 @@ MODBUS_REGISTER_BLOCKS = [
     # (2736, 10),     # Diagnostics 1-5
 
     # Totalizer 2 (2801-2813)
-    (2801, 1),      # Totalizer 2 assign
-    (2805, 2),      # Totalizer 2 mode, failure mode
-    (2808, 1),      # Totalizer 2 control
-    (2810, 4),      # Totalizer 2 value + overflow
+    # (2801, 1),      # Totalizer 2 assign
+    # (2805, 2),      # Totalizer 2 mode, failure mode
+    # (2808, 1),      # Totalizer 2 control
+    # (2810, 4),      # Totalizer 2 value + overflow
 
     # Totalizer 3 (3001-3013)
-    (3001, 1),      # Totalizer 3 assign
-    (3005, 2),      # Totalizer 3 mode, failure mode
-    (3008, 1),      # Totalizer 3 control
-    (3010, 4),      # Totalizer 3 value + overflow
+    # (3001, 1),      # Totalizer 3 assign
+    # (3005, 2),      # Totalizer 3 mode, failure mode
+    # (3008, 1),      # Totalizer 3 control
+    # (3010, 4),      # Totalizer 3 value + overflow
 
-    # Totalizer units (4604-4606)
-    (4604, 3),      # Totalizer 1-3 units
+    # # Totalizer units (4604-4606)
+    # (4604, 3),      # Totalizer 1-3 units
 
     # Modbus config (4910-4920)
     # (4910, 1),      # Bus address
