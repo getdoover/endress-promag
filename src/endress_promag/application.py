@@ -24,23 +24,22 @@ log = logging.getLogger()
 MODBUS_REGISTER_BLOCKS = [
     # Measured values and units (2009-2130)
     (2009, 2),      # Volume flow
-    (2099, 2),      # Conductivity
-    (2103, 2),      # Volume flow unit, Volume unit
-    (2109, 1),      # Temperature unit
-    (2121, 1),      # Conductivity unit
-    (2130, 1),      # Pressure unit
+
+    (2099, 32),      # Volume flow unit / volume unit / conductivity unit / temperature unit / pressure unit
+    # (2099, 2),      # Conductivity
+    # (2103, 2),      # Volume flow unit, Volume unit
+    # (2109, 1),      # Temperature unit
+    # (2121, 1),      # Conductivity unit
+    # (2130, 1),      # Pressure unit
 
     # Totalizer 1 (2601-2613)
-    (2601, 1),      # Totalizer 1 assign
-    (2605, 2),      # Totalizer 1 mode, failure mode
-    (2608, 1),      # Totalizer 1 control
-    (2610, 4),      # Totalizer 1 value + overflow
+    (2601, 14),      # Totalizer 1 assign / mode / control / failure mode / reset all totalizers
 
-    # Diagnostics (2624-2744)
-    (2624, 1),      # Operating time from restart
-    (2631, 1),      # Operating time
-    (2732, 2),      # Actual diagnostics, previous diagnostics
-    (2736, 10),     # Diagnostics 1-5
+    # # Diagnostics (2624-2744)
+    # (2624, 1),      # Operating time from restart
+    # (2631, 1),      # Operating time
+    # (2732, 2),      # Actual diagnostics, previous diagnostics
+    # (2736, 10),     # Diagnostics 1-5
 
     # Totalizer 2 (2801-2813)
     (2801, 1),      # Totalizer 2 assign
@@ -58,24 +57,24 @@ MODBUS_REGISTER_BLOCKS = [
     (4604, 3),      # Totalizer 1-3 units
 
     # Modbus config (4910-4920)
-    (4910, 1),      # Bus address
-    (4912, 1),      # Baudrate
-    (4914, 2),      # Parity, Byte order
-    (4916, 2),      # Telegram delay
-    (4918, 1),      # Locking status
-    (4920, 1),      # Failure mode
+    # (4910, 1),      # Bus address
+    # (4912, 1),      # Baudrate
+    # (4914, 2),      # Parity, Byte order
+    # (4916, 2),      # Telegram delay
+    # (4918, 1),      # Locking status
+    # (4920, 1),      # Failure mode
 
     # Flow velocity and pressure (5085-5088)
-    (5085, 4),      # Flow velocity + pressure
+    # (5085, 4),      # Flow velocity + pressure
 
     # Sensor config (5101-5106)
-    (5101, 1),      # Low flow cutoff
-    (5104, 2),      # Low flow cutoff off value
-    (5106, 1),      # Empty pipe detection
+    # (5101, 1),      # Low flow cutoff
+    # (5104, 2),      # Low flow cutoff off value
+    # (5106, 1),      # Empty pipe detection
 
     # Battery status (9772-9773, 9872-9873)
-    (9772, 2),      # Estimated battery lifetime
-    (9872, 2),      # Battery charge state
+    # (9772, 2),      # Estimated battery lifetime
+    # (9872, 2),      # Battery charge state
 ]
 
 
