@@ -195,6 +195,7 @@ class EndressPromagApplication(Application):
             log.warning("No connection to meter")
         else:
             log.info(f"Volume flow: {self.volume_flow}, Totaliser 1: {self.totaliser_1}")
+            log.info(f"Register values: {self.modbus_state._registers}")
         self.last_status_print = time.time()
 
     async def update_via_modbus(self):
@@ -237,7 +238,8 @@ class EndressPromagApplication(Application):
         if read_success and register_values:
             self._modbus_state_store.update(register_values)
             self._last_modbus_update = time.time()
-            log.debug(f"Modbus update successful, read {len(register_values)} registers")
+            log.info(f"Modbus update successful, read {len(register_values)} registers")
+            log.info(f"Register values: {register_values}")
         else:
             # Mark as uncontactable
             self._modbus_state_store.update(None)
