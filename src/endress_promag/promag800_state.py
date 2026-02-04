@@ -485,8 +485,14 @@ def registers_to_float(reg_high: int, reg_low: int, byte_order: ByteOrder = DEFA
     else:
         packed = struct.pack('>HH', reg_high, reg_low)
 
-    return struct.unpack('>f', packed)[0]
+    result = struct.unpack('>f', packed)[0]
 
+    ## Ensure result is a number
+    if not isinstance(result, (int, float)):
+        log.error(f"Invalid float result: {result} for registers {reg_high} and {reg_low}")
+        return None
+
+    return result
 
 def float_to_registers(value: float, byte_order: ByteOrder = DEFAULT_BYTE_ORDER) -> tuple[int, int]:
     """
