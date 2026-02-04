@@ -8,6 +8,7 @@ Register map based on GP01153DEN_0121 documentation.
 
 Written for use with Doover modbus interface connections.
 """
+import math
 import struct
 import logging
 from enum import IntEnum
@@ -488,7 +489,7 @@ def registers_to_float(reg_high: int, reg_low: int, byte_order: ByteOrder = DEFA
     result = struct.unpack('>f', packed)[0]
 
     ## Ensure result is a number
-    if not isinstance(result, (int, float)):
+    if not isinstance(result, (int, float)) or math.isnan(result) or math.isinf(result):
         log.error(f"Invalid float result: {result} for registers {reg_high} and {reg_low}")
         return None
 
