@@ -1,38 +1,74 @@
 from pydoover import ui
 
+from .app_tags import EndressPromagTags
 
-class EndressPromagUI:
-    def __init__(self, app):
-        self.app = app
 
-        name = app.config.meter_name.value.replace(" ", "_").lower()
+class EndressPromagUI(ui.UI):
+    volume_flow = ui.NumericVariable(
+        "Flow",
+        units="m³/h",
+        value=EndressPromagTags.volume_flow,
+        precision=2,
+    )
+    mass_flow = ui.NumericVariable(
+        "Mass Flow",
+        units="kg/min",
+        value=EndressPromagTags.mass_flow,
+        precision=2,
+        hidden=True,
+    )
+    conductivity = ui.NumericVariable(
+        "Conductivity",
+        units="µS/cm",
+        value=EndressPromagTags.conductivity,
+        precision=2,
+    )
+    totaliser_1 = ui.NumericVariable(
+        "Totaliser 1",
+        units="m³",
+        value=EndressPromagTags.totaliser_1,
+        precision=2,
+    )
+    last_read = ui.DateTimeVariable(
+        "Last Read",
+        value=EndressPromagTags.last_read_time,
+    )
 
-        volume_ranges = None
-        if app.config.max_flow.value is not None:
-            max_flow = app.config.max_flow.value
-            volume_ranges = [
-                ui.Range(min_val=0, max_val=int(max_flow*0.2), colour=ui.Colour.blue),
-                ui.Range(min_val=int(max_flow*0.2), max_val=int(max_flow*0.8), colour=ui.Colour.green),
-                ui.Range(min_val=int(max_flow*0.8), max_val=int(max_flow), colour=ui.Colour.yellow),
+    no_comms_warning = ui.WarningIndicator(
+        "No Comms",
+        name="no_comms_warning",
+        hidden=EndressPromagTags.meter_online,
+    )
+    meter_error_warning = ui.WarningIndicator(
+        "Meter Error",
+        name="meter_error_warning",
+        hidden=EndressPromagTags.meter_ok,
+    )
+
+    async def setup(self):
+        meter_name = self.config.meter_name.value
+        self.no_comms_warning.display_name = f"No Comms To {meter_name}"
+        self.meter_error_warning.display_name = f"{meter_name} Error"
+
+        # Mass flow is only available over the WiFi interface; the ProMag 800
+        # Modbus interface is volumetric and has no mass flow reading.
+        self.mass_flow.hidden = self.config.modbus_id.value is not None
+
+        # When a max flow is configured, promote the flow reading to a radial
+        # gauge with coloured bands.
+        max_flow = self.config.max_flow.value
+        if max_flow is not None:
+            self.volume_flow.form = ui.Widget.radial
+            self.volume_flow.ranges = [
+                ui.Range("Low", 0, int(max_flow * 0.2), ui.Colour.blue),
+                ui.Range("Good", int(max_flow * 0.2), int(max_flow * 0.8), ui.Colour.green),
+                ui.Range("High", int(max_flow * 0.8), int(max_flow), ui.Colour.yellow),
             ]
 
-        self.volume_flow = ui.NumericVariable(f"{name}_volume_flow", "Flow m3/h", precision=2, ranges=volume_ranges, form="radialGauge" if volume_ranges else None)
-        self.mass_flow = ui.NumericVariable(f"{name}_mass_flow", "Flow kg/min", precision=2)
-        self.conductivity = ui.NumericVariable(f"{name}_conductivity", "Conductivity uS/cm", precision=2)
-        self.totaliser_1 = ui.NumericVariable(f"{name}_totaliser_1", "Totaliser 1 (m3)", precision=2)
-        self.last_read_age = ui.DateTimeVariable(f"{name}_last_read_age", "Time since last read")
 
-        self.no_comms_warning = ui.WarningIndicator(f"{name}_no_comms_warning", f"No Comms To {app.config.meter_name.value}", hidden=True)
-        self.meter_error_warning = ui.WarningIndicator(f"{name}_meter_error_warning", f"{app.config.meter_name.value} Error", hidden=True)
+def export():
+    from pathlib import Path
 
-    def fetch(self):
-        return self.volume_flow, self.mass_flow, self.conductivity, self.totaliser_1, self.last_read_age, self.no_comms_warning, self.meter_error_warning
-
-    def update(self):
-        self.volume_flow.update(self.app.volume_flow)
-        self.mass_flow.update(self.app.mass_flow)
-        self.conductivity.update(self.app.conductivity)
-        self.totaliser_1.update(self.app.totaliser_1)
-        self.last_read_age.update(self.app.last_read_age)
-
-        self.no_comms_warning.hidden = not self.app.meter_offline
+    EndressPromagUI(None, None, None).export(
+        Path(__file__).parents[2] / "doover_config.json", "endress_promag"
+    )

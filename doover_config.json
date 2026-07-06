@@ -17,58 +17,91 @@
         "config_schema": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": "",
-            "title": "Application Config",
+            "title": "$default",
             "type": "object",
             "properties": {
                 "meter_name": {
                     "title": "Meter Name",
                     "x-name": "meter_name",
                     "x-hidden": false,
-                    "type": "string",
-                    "default": "Meter 1"
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "default": "Meter 1",
+                    "x-position": 0
                 },
                 "max_flow": {
                     "title": "Max Flow",
                     "x-name": "max_flow",
                     "x-hidden": false,
-                    "type": "number",
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "x-required": false,
                     "description": "Maximum flow in m3/h. Only used for display purposes. Leave blank to disable.",
-                    "default": null
+                    "default": null,
+                    "x-position": 1
                 },
-                "eh_meter_ip_host._default_is_192.168.1.212": {
-                    "title": "EH Meter IP Host. Default is 192.168.1.212",
-                    "x-name": "eh_meter_ip_host._default_is_192.168.1.212",
+                "eh_meter_ip_host": {
+                    "title": "EH Meter IP Host",
+                    "x-name": "eh_meter_ip_host",
                     "x-hidden": false,
-                    "type": "string",
-                    "default": null
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "EH Meter IP Host. Default is 192.168.1.212",
+                    "default": null,
+                    "x-position": 2
                 },
                 "eh_meter_ip_port": {
                     "title": "EH Meter IP Port",
                     "x-name": "eh_meter_ip_port",
                     "x-hidden": false,
-                    "type": "integer",
-                    "default": 80
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "default": 80,
+                    "x-position": 3
                 },
                 "eh_meter_password": {
                     "title": "EH Meter Password",
                     "x-name": "eh_meter_password",
                     "x-hidden": false,
-                    "type": "string",
-                    "default": "0000"
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "default": "0000",
+                    "x-position": 4
                 },
                 "modbus_id": {
                     "title": "Modbus ID",
                     "x-name": "modbus_id",
                     "x-hidden": false,
-                    "type": "integer",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
                     "description": "Modbus ID. Default is 1. If this is set, the EH Meter IP Host and Port will be ignored and the Modbus connection will be used instead.",
-                    "default": null
+                    "default": null,
+                    "x-position": 5
                 },
                 "modbus_config": {
                     "title": "Modbus Config",
                     "x-name": "modbus_config",
                     "x-hidden": false,
                     "type": "object",
+                    "x-required": true,
+                    "x-position": 6,
                     "properties": {
                         "bus_type": {
                             "enum": [
@@ -78,29 +111,49 @@
                             "title": "Bus Type",
                             "x-name": "bus_type",
                             "x-hidden": false,
-                            "type": "string",
-                            "default": "serial"
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": "serial",
+                            "x-position": 1
                         },
                         "name": {
                             "title": "Name",
                             "x-name": "name",
                             "x-hidden": false,
-                            "type": "string",
-                            "default": "default"
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": "default",
+                            "x-position": 2
                         },
                         "serial_port": {
                             "title": "Serial Port",
                             "x-name": "serial_port",
                             "x-hidden": false,
-                            "type": "string",
-                            "default": "/dev/ttyS0"
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": "/dev/ttyAMA0",
+                            "x-position": 3
                         },
                         "serial_baud": {
                             "title": "Serial Baud",
                             "x-name": "serial_baud",
                             "x-hidden": false,
-                            "type": "integer",
-                            "default": 9600
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": 9600,
+                            "x-position": 4
                         },
                         "serial_method": {
                             "enum": [
@@ -112,15 +165,25 @@
                             "title": "Serial Method",
                             "x-name": "serial_method",
                             "x-hidden": false,
-                            "type": "string",
-                            "default": "rtu"
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": "rtu",
+                            "x-position": 5
                         },
                         "serial_data_bits": {
                             "title": "Serial Data Bits",
                             "x-name": "serial_data_bits",
                             "x-hidden": false,
-                            "type": "integer",
-                            "default": 8
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": 8,
+                            "x-position": 6
                         },
                         "serial_parity": {
                             "enum": [
@@ -131,56 +194,107 @@
                             "title": "Serial Parity",
                             "x-name": "serial_parity",
                             "x-hidden": false,
-                            "type": "string",
-                            "default": "None"
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": "None",
+                            "x-position": 7
                         },
                         "serial_stop_bits": {
                             "title": "Serial Stop Bits",
                             "x-name": "serial_stop_bits",
                             "x-hidden": false,
-                            "type": "integer",
-                            "default": 1
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": 1,
+                            "x-position": 8
                         },
                         "serial_timeout": {
                             "title": "Serial Timeout",
                             "x-name": "serial_timeout",
                             "x-hidden": false,
-                            "type": "number",
-                            "default": 0.3
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": 0.3,
+                            "x-position": 9
                         },
                         "tcp_uri": {
                             "title": "TCP URI",
                             "x-name": "tcp_uri",
                             "x-hidden": false,
-                            "type": "string",
-                            "default": "127.0.0.1:5000"
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": "127.0.0.1:5000",
+                            "x-position": 10
                         },
                         "tcp_timeout": {
                             "title": "TCP Timeout",
                             "x-name": "tcp_timeout",
                             "x-hidden": false,
-                            "type": "number",
-                            "default": 2.0
+                            "type": [
+                                "number",
+                                "null"
+                            ],
+                            "x-required": false,
+                            "default": 2.0,
+                            "x-position": 11
                         }
                     },
                     "additionalElements": true,
-                    "required": []
+                    "required": [],
+                    "x-collapsible": true,
+                    "x-defaultCollapsed": false
                 },
                 "eh_meter_serial_number": {
                     "title": "EH Meter Serial Number",
                     "x-name": "eh_meter_serial_number",
                     "x-hidden": false,
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
                     "description": "OPTIONAL: If provided, any meter not matching this serial number will be ignored",
-                    "default": null
+                    "default": null,
+                    "x-position": 7
                 },
                 "no_comms_timeout": {
                     "title": "No Comms Timeout",
                     "x-name": "no_comms_timeout",
                     "x-hidden": false,
-                    "type": "integer",
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
                     "description": "Time in minutes after which the meter is considered to be offline",
-                    "default": 10
+                    "default": 10,
+                    "x-position": 8
+                },
+                "dv_app_position": {
+                    "title": "Position",
+                    "x-name": "dv_app_position",
+                    "x-hidden": true,
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Position of Application in UI Structure. Smaller numbers are closer to the top.",
+                    "default": 100,
+                    "x-position": 9,
+                    "minimum": 0
                 }
             },
             "additionalElements": true,
@@ -201,6 +315,95 @@
         "code_repo_id": null,
         "export_config_command": null,
         "run_command": null,
-        "lambda_arn": null
+        "lambda_arn": null,
+        "ui_schema": {
+            "displayString": "$config.app().APP_DISPLAY_NAME",
+            "hidden": "$config.app().hidden:boolean:false:boolean:false",
+            "position": "$config.app().dv_app_position:number:100",
+            "icon": null,
+            "colour": null,
+            "defaultOpen": "$config.app().dv_app_default_open:boolean",
+            "type": "uiApplication",
+            "name": "$config.app().APP_KEY",
+            "children": {
+                "flow": {
+                    "name": "flow",
+                    "type": "uiVariable",
+                    "displayString": "Flow",
+                    "showActivity": true,
+                    "position": 51,
+                    "hidden": false,
+                    "units": "m\u00b3/h",
+                    "varType": "float",
+                    "currentValue": "$tag.app().volume_flow:number:null",
+                    "decPrecision": 2,
+                    "live": true
+                },
+                "mass_flow": {
+                    "name": "mass_flow",
+                    "type": "uiVariable",
+                    "displayString": "Mass Flow",
+                    "showActivity": true,
+                    "position": 52,
+                    "hidden": true,
+                    "units": "kg/min",
+                    "varType": "float",
+                    "currentValue": "$tag.app().mass_flow:number:null",
+                    "decPrecision": 2
+                },
+                "conductivity": {
+                    "name": "conductivity",
+                    "type": "uiVariable",
+                    "displayString": "Conductivity",
+                    "showActivity": true,
+                    "position": 53,
+                    "hidden": false,
+                    "units": "\u00b5S/cm",
+                    "varType": "float",
+                    "currentValue": "$tag.app().conductivity:number:null",
+                    "decPrecision": 2
+                },
+                "totaliser_1": {
+                    "name": "totaliser_1",
+                    "type": "uiVariable",
+                    "displayString": "Totaliser 1",
+                    "showActivity": true,
+                    "position": 54,
+                    "hidden": false,
+                    "units": "m\u00b3",
+                    "varType": "float",
+                    "currentValue": "$tag.app().totaliser_1:number:null",
+                    "decPrecision": 2
+                },
+                "last_read": {
+                    "name": "last_read",
+                    "type": "uiVariable",
+                    "displayString": "Last Read",
+                    "showActivity": true,
+                    "position": 55,
+                    "hidden": false,
+                    "varType": "time",
+                    "currentValue": "$tag.app().last_read_time:number:null"
+                },
+                "no_comms_warning": {
+                    "name": "no_comms_warning",
+                    "type": "uiWarningIndicator",
+                    "displayString": "No Comms",
+                    "position": 56,
+                    "hidden": "$tag.app().meter_online:boolean:true",
+                    "currentValue": "$cmds.app().no_comms_warning",
+                    "can_cancel": true
+                },
+                "meter_error_warning": {
+                    "name": "meter_error_warning",
+                    "type": "uiWarningIndicator",
+                    "displayString": "Meter Error",
+                    "position": 57,
+                    "hidden": "$tag.app().meter_ok:boolean:true",
+                    "currentValue": "$cmds.app().meter_error_warning",
+                    "can_cancel": true
+                }
+            }
+        }
     }
 }

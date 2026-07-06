@@ -4,15 +4,14 @@ import asyncio
 from typing import Optional
 
 from pydoover.docker import Application
-from pydoover import ui
 
 from .app_config import EndressPromagConfig
+from .app_tags import EndressPromagTags
 from .app_ui import EndressPromagUI
 from .eh_meter_wifi import EHMeter
 from .promag800_state import (
     ProMag800StateStore,
     ProMag800StateRecord,
-    ProMag800Registers,
     ByteOrder,
 )
 
@@ -92,7 +91,13 @@ def cached_value(func):
 
 
 class EndressPromagApplication(Application):
-    config: EndressPromagConfig  # not necessary, but helps your IDE provide autocomplete!
+    config: EndressPromagConfig  # these aren't necessary, but help your IDE provide autocomplete!
+    tags: EndressPromagTags
+    ui: EndressPromagUI
+
+    config_cls = EndressPromagConfig
+    tags_cls = EndressPromagTags
+    ui_cls = EndressPromagUI
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,7 +109,6 @@ class EndressPromagApplication(Application):
         self._last_non_null_age = None
 
         self.started: float = time.time()
-        self.ui: EndressPromagUI = None
 
         # Modbus state store for ProMag 800
         self._modbus_state_store: Optional[ProMag800StateStore] = None
@@ -116,10 +120,6 @@ class EndressPromagApplication(Application):
         return self.config.modbus_id.value is not None
 
     async def setup(self):
-        self.ui = EndressPromagUI(self)
-        self.ui_manager.set_display_name(self.config.meter_name.value)
-        self.ui_manager.add_children(*self.ui.fetch())
-
         if self.use_modbus:
             # Initialize modbus state store
             self._modbus_state_store = ProMag800StateStore(byte_order=ByteOrder.ORDER_0123)
@@ -145,29 +145,16 @@ class EndressPromagApplication(Application):
 
         self.ensure_meter_online()
         self.print_status()
-        self.ui_manager.set_display_name(self.get_display_name())
         await self.update_tags()
-        self.ui.update()
 
     async def update_tags(self):
-        update = {
-            "flow_m3h": self.volume_flow,
-            "flow_kgmin": self.mass_flow,
-            "totaliser_1": self.totaliser_1,
-        }
-        await self.set_tags(update)
-
-    def get_display_name(self):
-        name = self.config.meter_name.value
-        if self.meter_offline:
-            name += " : Offline"
-        else:
-            flow = self.volume_flow
-            if flow is None or flow == 0:
-                name += " : No Flow"
-            else:
-                name += f" : {flow:.2f} m3/h"
-        return name
+        await self.tags.volume_flow.set(self.volume_flow)
+        await self.tags.mass_flow.set(self.mass_flow)
+        await self.tags.conductivity.set(self.conductivity)
+        await self.tags.totaliser_1.set(self.totaliser_1)
+        await self.tags.last_read_time.set(time.time() - self.last_read_age)
+        await self.tags.meter_online.set(not self.meter_offline)
+        await self.tags.meter_ok.set(not self.has_active_diagnostic)
 
     def ensure_serial_number(self):
         """Validate serial number (WiFi mode only)."""
@@ -212,7 +199,7 @@ class EndressPromagApplication(Application):
 
         for start_address, num_registers in MODBUS_REGISTER_BLOCKS:
             try:
-                values = await self.modbus_iface.read_registers_async(
+                values = await self.modbus_iface.read_registers(
                     bus_id=bus_id,
                     modbus_id=modbus_id,
                     start_address=start_address,

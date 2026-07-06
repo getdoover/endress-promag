@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "pydoover>=0.4.13",
+    "pydoover>=1.4.2",
     "transitions>=0.9.2",
     "websockets",
     "pycryptodome",
@@ -14,6 +14,7 @@ dependencies = [
 [project.scripts]
 doover-app-run = "endress_promag:main"
 export-config = "endress_promag.app_config:export"
+export-ui = "endress_promag.app_ui:export"
 
 [build-system]
 requires = ["hatchling"]
