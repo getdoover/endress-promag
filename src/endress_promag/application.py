@@ -137,7 +137,10 @@ class EndressPromagApplication(Application):
     async def setup(self):
         if self.use_modbus:
             # Initialize modbus state store
-            self._modbus_state_store = ProMag800StateStore(byte_order=ByteOrder.ORDER_0123)
+            # The meter returns 32-bit floats word-swapped (low word first);
+            # confirmed on the wire (e.g. volume flow and totaliser only decode to
+            # physically sensible values with this order, not ORDER_0123).
+            self._modbus_state_store = ProMag800StateStore(byte_order=ByteOrder.ORDER_2301)
             log.info(f"Using Modbus interface, ID: {self.config.modbus_id.value}")
         else:
             # Initialize WiFi interface
@@ -218,7 +221,11 @@ class EndressPromagApplication(Application):
                 values = await self.modbus_iface.read_registers(
                     bus_id=bus_id,
                     modbus_id=modbus_id,
-                    start_address=start_address,
+                    # E+H documents 1-based register numbers; the Modbus wire
+                    # address is (register number - 1). MODBUS_REGISTER_BLOCKS and
+                    # the state store both key off the E+H register number, so we
+                    # subtract 1 only for the wire read and re-key the result below.
+                    start_address=start_address - 1,
                     num_registers=num_registers,
                     # The ProMag 800 register map is holding registers (Modbus
                     # FC03). Note the doover modbus master numbers register types
