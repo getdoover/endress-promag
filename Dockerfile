@@ -12,11 +12,11 @@ ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
 
+# Resolve base-provided packages from the system instead of reinstalling them.
 RUN uv venv --system-site-packages
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=packages/leachate_common/pyproject.toml,target=packages/leachate_common/pyproject.toml \
     SKIP=$(uv pip freeze --system | sed -E 's/[[:space:]@=].*//; s/^/--no-install-package /' | tr '\n' ' ') && \
     uv sync --locked --no-install-project --no-dev $SKIP
 
