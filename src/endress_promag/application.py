@@ -18,64 +18,86 @@ from .promag800_state import (
 log = logging.getLogger()
 
 
-# Register blocks to read - grouped by proximity to minimize reads
-# Each tuple is (start_address, num_registers)
+# Register blocks to read each loop - (E+H register number, num_registers).
+#
 MODBUS_REGISTER_BLOCKS = [
-    # Measured values and units (2009-2130)
-    (2009, 2),      # Volume flow
-    (2099, 2),      # Conductivity
-    (2103, 2),      # Volume flow unit, Volume unit
-    (2109, 1),      # Temperature unit
-    (2121, 1),      # Conductivity unit
-    (2130, 1),      # Pressure unit
+    (2009, 2),      # Volume flow (float)
+    (2099, 2),      # Conductivity (float)
+    (2610, 2),      # Totalizer 1 value (float) - value only, NOT the +overflow
+    (2732, 1),      # Actual diagnostics (drives meter_ok)
 
-    # Totalizer 1 (2601-2613)
-    (2601, 1),      # Totalizer 1 assign
-    (2605, 2),      # Totalizer 1 mode, failure mode
-    (2608, 1),      # Totalizer 1 control
-    (2610, 4),      # Totalizer 1 value + overflow
-
-    # Diagnostics (2624-2744)
-    (2624, 1),      # Operating time from restart
-    (2631, 1),      # Operating time
-    (2732, 2),      # Actual diagnostics, previous diagnostics
-    (2736, 10),     # Diagnostics 1-5
-
-    # Totalizer 2 (2801-2813)
-    (2801, 1),      # Totalizer 2 assign
-    (2805, 2),      # Totalizer 2 mode, failure mode
-    (2808, 1),      # Totalizer 2 control
-    (2810, 4),      # Totalizer 2 value + overflow
-
-    # Totalizer 3 (3001-3013)
-    (3001, 1),      # Totalizer 3 assign
-    (3005, 2),      # Totalizer 3 mode, failure mode
-    (3008, 1),      # Totalizer 3 control
-    (3010, 4),      # Totalizer 3 value + overflow
-
-    # Totalizer units (4604-4606)
-    (4604, 3),      # Totalizer 1-3 units
-
-    # Modbus config (4910-4920)
-    (4910, 1),      # Bus address
-    (4912, 1),      # Baudrate
-    (4914, 2),      # Parity, Byte order
-    (4916, 2),      # Telegram delay
-    (4918, 1),      # Locking status
-    (4920, 1),      # Failure mode
-
-    # Flow velocity and pressure (5085-5088)
-    (5085, 4),      # Flow velocity + pressure
-
-    # Sensor config (5101-5106)
-    (5101, 1),      # Low flow cutoff
-    (5104, 2),      # Low flow cutoff off value
-    (5106, 1),      # Empty pipe detection
-
-    # Battery status (9772-9773, 9872-9873)
-    (9772, 2),      # Estimated battery lifetime
-    (9872, 2),      # Battery charge state
+    # --- Additional registers, disabled for now -----------------------------
+    # The meter exposes these but nothing currently displays them, so we don't
+    # pay the per-block settle delay / miss risk for them. Re-enable individually
+    # if/when they're surfaced as tags. NOTE: keep any read to num_registers <= 2
+    # (the meter fails longer reads as a unit - the old (2610, 4) is why the
+    # totaliser was blank), so the widened blocks below are split accordingly.
+    #
+    # Measured values and units
+    # (2103, 2),    # Volume flow unit, Volume unit
+    # (2109, 1),    # Temperature unit
+    # (2121, 1),    # Conductivity unit
+    # (2130, 1),    # Pressure unit
+    #
+    # Totalizer 1 config
+    # (2601, 1),    # Totalizer 1 assign
+    # (2605, 2),    # Totalizer 1 mode, failure mode
+    # (2608, 1),    # Totalizer 1 control
+    # (2612, 2),    # Totalizer 1 overflow (was part of the old (2610, 4))
+    #
+    # Diagnostics
+    # (2624, 1),    # Operating time from restart
+    # (2631, 1),    # Operating time
+    # (2733, 1),    # Previous diagnostics (was part of the old (2732, 2))
+    # (2736, 2),    # Diagnostic 1   (old (2736, 10) split into <=2 reg reads)
+    # (2738, 2),    # Diagnostic 2
+    # (2740, 2),    # Diagnostic 3
+    # (2742, 2),    # Diagnostic 4
+    # (2744, 2),    # Diagnostic 5
+    #
+    # Totalizer 2
+    # (2801, 1),    # Totalizer 2 assign
+    # (2805, 2),    # Totalizer 2 mode, failure mode
+    # (2808, 1),    # Totalizer 2 control
+    # (2810, 2),    # Totalizer 2 value (was (2810, 4) incl. overflow)
+    # (2812, 2),    # Totalizer 2 overflow
+    #
+    # Totalizer 3
+    # (3001, 1),    # Totalizer 3 assign
+    # (3005, 2),    # Totalizer 3 mode, failure mode
+    # (3008, 1),    # Totalizer 3 control
+    # (3010, 2),    # Totalizer 3 value (was (3010, 4) incl. overflow)
+    # (3012, 2),    # Totalizer 3 overflow
+    #
+    # Totalizer units
+    # (4604, 2),    # Totalizer 1-2 units (was (4604, 3))
+    # (4606, 1),    # Totalizer 3 unit
+    #
+    # Modbus config
+    # (4910, 1),    # Bus address
+    # (4912, 1),    # Baudrate
+    # (4914, 2),    # Parity, Byte order
+    # (4916, 2),    # Telegram delay
+    # (4918, 1),    # Locking status
+    # (4920, 1),    # Failure mode
+    #
+    # Flow velocity and pressure
+    # (5085, 2),    # Flow velocity (was (5085, 4) incl. pressure)
+    # (5087, 2),    # Pressure
+    #
+    # Sensor config
+    # (5101, 1),    # Low flow cutoff
+    # (5104, 2),    # Low flow cutoff off value
+    # (5106, 1),    # Empty pipe detection
+    #
+    # Battery status
+    # (9772, 2),    # Estimated battery lifetime
+    # (9872, 2),    # Battery charge state
 ]
+
+
+MODBUS_READ_SETTLE_SECS = 0.2
+MODBUS_READ_ATTEMPTS = 5
 
 
 # A decorator to cache a value if it is not None
@@ -217,36 +239,13 @@ class EndressPromagApplication(Application):
         read_success = False
 
         for start_address, num_registers in MODBUS_REGISTER_BLOCKS:
-            try:
-                values = await self.modbus_iface.read_registers(
-                    bus_id=bus_id,
-                    modbus_id=modbus_id,
-                    # E+H documents 1-based register numbers; the Modbus wire
-                    # address is (register number - 1). MODBUS_REGISTER_BLOCKS and
-                    # the state store both key off the E+H register number, so we
-                    # subtract 1 only for the wire read and re-key the result below.
-                    start_address=start_address - 1,
-                    num_registers=num_registers,
-                    # The ProMag 800 register map is holding registers (Modbus
-                    # FC03). Note the doover modbus master numbers register types
-                    # 3=input, 4=holding (the reverse of the FC numbers), so
-                    # holding registers are register_type=4 here, not 3.
-                    register_type=4,
-                )
-
-                if values is not None:
-                    read_success = True
-                    # Handle single value vs list
-                    if isinstance(values, int):
-                        values = [values]
-                    # Map register addresses to values
-                    for i, val in enumerate(values):
-                        register_values[start_address + i] = val
-                else:
-                    log.debug(f"Failed to read registers {start_address}-{start_address + num_registers - 1}")
-
-            except Exception as e:
-                log.warning(f"Error reading modbus registers {start_address}-{start_address + num_registers - 1}: {e}")
+            values = await self._read_block(bus_id, modbus_id, start_address, num_registers)
+            if values is not None:
+                read_success = True
+                # Key each value by its E+H register number so the state store
+                # (which uses those numbers) finds it.
+                for i, val in enumerate(values):
+                    register_values[start_address + i] = val
 
         # Update the state store
         if read_success and register_values:
@@ -257,6 +256,45 @@ class EndressPromagApplication(Application):
             # Mark as uncontactable
             self._modbus_state_store.update(None)
             log.warning("Modbus read failed - no valid data received")
+
+    async def _read_block(self, bus_id, modbus_id, start_address, num_registers):
+        """Read one register block, with a settle delay + retries.
+
+        Returns the list of register values, or None if every attempt failed.
+        See MODBUS_REGISTER_BLOCKS for why the settle delay and retries are
+        needed. ``start_address`` is the E+H register number; the wire read uses
+        ``start_address - 1``.
+        """
+        for attempt in range(MODBUS_READ_ATTEMPTS):
+            # Settle the line before each attempt (including retries - a retry
+            # that fires immediately would just hit the same turnaround glitch).
+            await asyncio.sleep(MODBUS_READ_SETTLE_SECS)
+            try:
+                values = await self.modbus_iface.read_registers(
+                    bus_id=bus_id,
+                    modbus_id=modbus_id,
+                    start_address=start_address - 1,
+                    num_registers=num_registers,
+                    # doover modbus master register types: 3=input, 4=holding
+                    # (the reverse of the Modbus FC numbers). The ProMag map is
+                    # holding registers, so 4.
+                    register_type=4,
+                    # We own retries here (with a settle between); don't also let
+                    # the master/pymodbus retry back-to-back without settling.
+                    retries=0,
+                )
+                if values is not None:
+                    return [values] if isinstance(values, int) else values
+            except Exception as e:
+                log.debug(
+                    f"Read attempt {attempt + 1} for registers "
+                    f"{start_address}-{start_address + num_registers - 1} failed: {e}"
+                )
+        log.warning(
+            f"Failed to read registers {start_address}-{start_address + num_registers - 1} "
+            f"after {MODBUS_READ_ATTEMPTS} attempts"
+        )
+        return None
 
     @property
     def modbus_state(self) -> Optional[ProMag800StateRecord]:
