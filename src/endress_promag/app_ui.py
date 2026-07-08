@@ -29,7 +29,7 @@ class EndressPromagUI(ui.UI):
         value=EndressPromagTags.totaliser_1,
         precision=2,
     )
-    last_read = ui.DateTimeVariable(
+    last_read = ui.Timestamp(
         "Last Read",
         value=EndressPromagTags.last_read_time,
     )
@@ -54,10 +54,20 @@ class EndressPromagUI(ui.UI):
         # Modbus interface is volumetric and has no mass flow reading.
         self.mass_flow.hidden = self.config.modbus_id.value is not None
 
+        # Volume unit (m³ or litres). The meter reports m³; when litres is
+        # selected the application scales values by 1000, so the display units
+        # and the gauge bands must scale to match.
+        litres = self.config.units.value == "L"
+        factor = 1000 if litres else 1
+        self.volume_flow.units = "L/h" if litres else "m³/h"
+        self.totaliser_1.units = "L" if litres else "m³"
+
         # When a max flow is configured, promote the flow reading to a radial
-        # gauge with coloured bands.
+        # gauge with coloured bands. max_flow is configured in m³/h, so scale it
+        # into the display unit alongside the flow value.
         max_flow = self.config.max_flow.value
         if max_flow is not None:
+            max_flow = max_flow * factor
             self.volume_flow.form = ui.Widget.radial
             self.volume_flow.ranges = [
                 ui.Range("Low", 0, int(max_flow * 0.2), ui.Colour.blue),

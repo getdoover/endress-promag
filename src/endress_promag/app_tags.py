@@ -7,7 +7,8 @@ class EndressPromagTags(Tags):
     conductivity = Tag("number", default=None)
     totaliser_1 = Tag("number", default=None)
 
-    # Timestamp (unix seconds) of the last successful read from the meter.
+    # Timestamp (unix milliseconds) of the last successful read from the meter.
+    # Milliseconds because it backs a uiTimestamp element (see app_ui).
     last_read_time = Tag("number", default=None)
 
     # True while the meter is contactable. Drives the "no comms" warning's

@@ -14,6 +14,13 @@ class EndressPromagConfig(config.Schema):
         description="Maximum flow in m3/h. Only used for display purposes. Leave blank to disable.",
     )
 
+    units = config.Enum(
+        "Volume Units",
+        choices=["m³", "L"],
+        default="m³",
+        description="Display unit for volume flow and totaliser. The meter reports m³; select L to convert to litres (×1000).",
+    )
+
     eh_meter_host = config.String(
         "EH Meter IP Host",
         default=None,

@@ -45,6 +45,23 @@
                     "default": null,
                     "x-position": 1
                 },
+                "volume_units": {
+                    "enum": [
+                        "m\u00b3",
+                        "L"
+                    ],
+                    "title": "Volume Units",
+                    "x-name": "volume_units",
+                    "x-hidden": false,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "Display unit for volume flow and totaliser. The meter reports m\u00b3; select L to convert to litres (\u00d71000).",
+                    "default": "m\u00b3",
+                    "x-position": 2
+                },
                 "eh_meter_ip_host": {
                     "title": "EH Meter IP Host",
                     "x-name": "eh_meter_ip_host",
@@ -56,7 +73,7 @@
                     "x-required": false,
                     "description": "EH Meter IP Host. Default is 192.168.1.212",
                     "default": null,
-                    "x-position": 2
+                    "x-position": 3
                 },
                 "eh_meter_ip_port": {
                     "title": "EH Meter IP Port",
@@ -68,7 +85,7 @@
                     ],
                     "x-required": false,
                     "default": 80,
-                    "x-position": 3
+                    "x-position": 4
                 },
                 "eh_meter_password": {
                     "title": "EH Meter Password",
@@ -80,7 +97,7 @@
                     ],
                     "x-required": false,
                     "default": "0000",
-                    "x-position": 4
+                    "x-position": 5
                 },
                 "modbus_id": {
                     "title": "Modbus ID",
@@ -93,7 +110,7 @@
                     "x-required": false,
                     "description": "Modbus ID. Default is 1. If this is set, the EH Meter IP Host and Port will be ignored and the Modbus connection will be used instead.",
                     "default": null,
-                    "x-position": 5
+                    "x-position": 6
                 },
                 "modbus_config": {
                     "title": "Modbus Config",
@@ -101,7 +118,7 @@
                     "x-hidden": false,
                     "type": "object",
                     "x-required": true,
-                    "x-position": 6,
+                    "x-position": 7,
                     "properties": {
                         "bus_type": {
                             "enum": [
@@ -267,7 +284,7 @@
                     "x-required": false,
                     "description": "OPTIONAL: If provided, any meter not matching this serial number will be ignored",
                     "default": null,
-                    "x-position": 7
+                    "x-position": 8
                 },
                 "no_comms_timeout": {
                     "title": "No Comms Timeout",
@@ -280,7 +297,7 @@
                     "x-required": false,
                     "description": "Time in minutes after which the meter is considered to be offline",
                     "default": 10,
-                    "x-position": 8
+                    "x-position": 9
                 },
                 "dv_app_position": {
                     "title": "Position",
@@ -293,7 +310,7 @@
                     "x-required": false,
                     "description": "Position of Application in UI Structure. Smaller numbers are closer to the top.",
                     "default": 100,
-                    "x-position": 9,
+                    "x-position": 10,
                     "minimum": 0
                 }
             },
@@ -377,12 +394,12 @@
                 },
                 "last_read": {
                     "name": "last_read",
-                    "type": "uiVariable",
+                    "type": "uiTimestamp",
                     "displayString": "Last Read",
                     "showActivity": true,
                     "position": 55,
                     "hidden": false,
-                    "varType": "time",
+                    "varType": "timestamp",
                     "currentValue": "$tag.app().last_read_time:number:null"
                 },
                 "no_comms_warning": {

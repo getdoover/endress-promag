@@ -119,6 +119,21 @@ class EndressPromagApplication(Application):
         """Check if we should use Modbus interface instead of WiFi."""
         return self.config.modbus_id.value is not None
 
+    @property
+    def volume_conversion_factor(self) -> float:
+        """Factor to convert meter-native m³ values to the configured display unit.
+
+        The meter reports volumes in m³; when the user configures litres we scale
+        by 1000. Applies to both volume flow (m³/h → L/h) and totaliser (m³ → L).
+        """
+        return 1000.0 if self.config.units.value == "L" else 1.0
+
+    def _to_display_volume(self, value):
+        """Scale a meter-native m³ value into the configured display unit."""
+        if value is None:
+            return None
+        return value * self.volume_conversion_factor
+
     async def setup(self):
         if self.use_modbus:
             # Initialize modbus state store
@@ -148,11 +163,12 @@ class EndressPromagApplication(Application):
         await self.update_tags()
 
     async def update_tags(self):
-        await self.tags.volume_flow.set(self.volume_flow)
+        await self.tags.volume_flow.set(self._to_display_volume(self.volume_flow))
         await self.tags.mass_flow.set(self.mass_flow)
         await self.tags.conductivity.set(self.conductivity)
-        await self.tags.totaliser_1.set(self.totaliser_1)
-        await self.tags.last_read_time.set(time.time() - self.last_read_age)
+        await self.tags.totaliser_1.set(self._to_display_volume(self.totaliser_1))
+        # uiTimestamp expects milliseconds since epoch.
+        await self.tags.last_read_time.set(int((time.time() - self.last_read_age) * 1000))
         await self.tags.meter_online.set(not self.meter_offline)
         await self.tags.meter_ok.set(not self.has_active_diagnostic)
 
@@ -204,7 +220,11 @@ class EndressPromagApplication(Application):
                     modbus_id=modbus_id,
                     start_address=start_address,
                     num_registers=num_registers,
-                    register_type=3,  # Holding registers (function code 03)
+                    # The ProMag 800 register map is holding registers (Modbus
+                    # FC03). Note the doover modbus master numbers register types
+                    # 3=input, 4=holding (the reverse of the FC numbers), so
+                    # holding registers are register_type=4 here, not 3.
+                    register_type=4,
                 )
 
                 if values is not None:
