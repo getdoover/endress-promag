@@ -176,12 +176,14 @@ class EndressPromagApplication(Application):
     async def main_loop(self):
         if self.use_modbus:
             await self.update_via_modbus()
-        else:
+        elif self._my_ap_is_active():
             await self.eh_meter.update()
             correct_serial = self.ensure_serial_number()
             if not correct_serial:
                 log.warning("Serial number mismatch, Sleeping Longer")
                 await asyncio.sleep(25)
+        else:
+            log.info("WiFi rotator is on another meter's AP; skipping poll this cycle")
 
         self.ensure_meter_online()
         self.print_status()
@@ -197,6 +199,32 @@ class EndressPromagApplication(Application):
         await self.tags.meter_online.set(not self.meter_offline)
         await self.tags.meter_ok.set(not self.has_active_diagnostic)
 
+    def _my_ap_is_active(self) -> bool:
+        """Whether this meter's AP is the one the wifi-rotate app currently has connected.
+
+        The E+H meter web server is single-session, so when several meter apps
+        share one doovit behind a rotating WiFi connection, only the meter whose
+        AP is currently active should be polled — otherwise they contend and all
+        starve. Returns True (poll) when not coordinating with a rotator, or when
+        the rotator's state can't be determined, so the app still works standalone.
+        """
+        rotator_key = self.config.wifi_rotator_app_key.value
+        if not rotator_key:
+            return True  # not coordinating; poll as normal (standalone use)
+
+        active_ssid = self.get_tag("current_ssid", app_key=rotator_key)
+        if not active_ssid:
+            return True  # rotator not reporting yet / absent — fail open
+
+        serial = self.config.eh_meter_serial_number.value
+        if not serial:
+            return True  # can't identify our AP without a serial — fail open
+
+        # E+H AP SSIDs embed the meter serial suffix, e.g. the AP
+        # "EH_Promag 400_D520000" corresponds to serial "X30CD520000".
+        ssid_suffix = active_ssid.rsplit("_", 1)[-1]
+        return serial.endswith(ssid_suffix)
+
     def ensure_serial_number(self):
         """Validate serial number (WiFi mode only)."""
         if self.use_modbus:
@@ -204,7 +232,11 @@ class EndressPromagApplication(Application):
         if self.config.eh_meter_serial_number.value is None or self.config.eh_meter_serial_number.value == "":
             return True
         serial_number = self.eh_meter.get_value("Serial number")
-        if not serial_number or serial_number != self.config.eh_meter_serial_number.value:
+        if serial_number is None:
+            # Couldn't read the serial this cycle (e.g. a starved or partial read).
+            # Don't wipe a possibly-valid cached reading — just skip confirmation.
+            return True
+        if serial_number != self.config.eh_meter_serial_number.value:
             self.eh_meter.clear_values()
             return False
         return True

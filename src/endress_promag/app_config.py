@@ -41,6 +41,19 @@ class EndressPromagConfig(config.Schema):
         default=None,
         description="OPTIONAL: If provided, any meter not matching this serial number will be ignored",
     )
+
+    wifi_rotator_app_key = config.String(
+        "WiFi Rotator App Key",
+        default=None,
+        description=(
+            "OPTIONAL (WiFi mode): app key of the wifi-rotate app cycling through "
+            "meter APs, e.g. 'wifi_rotate_1'. When set, this app only polls the meter "
+            "while the rotator reports THIS meter's AP as connected, so multiple meter "
+            "apps don't contend for the meter's single web session. Requires EH Meter "
+            "Serial Number to be set (the meter serial identifies which AP is ours). "
+            "Leave blank when not using the wifi rotator."
+        ),
+    )
     no_comms_timeout = config.Integer(
         "No Comms Timeout",
         default=10,

@@ -286,6 +286,19 @@
                     "default": null,
                     "x-position": 8
                 },
+                "wifi_rotator_app_key": {
+                    "title": "WiFi Rotator App Key",
+                    "x-name": "wifi_rotator_app_key",
+                    "x-hidden": false,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "x-required": false,
+                    "description": "OPTIONAL (WiFi mode): app key of the wifi-rotate app cycling through meter APs, e.g. 'wifi_rotate_1'. When set, this app only polls the meter while the rotator reports THIS meter's AP as connected, so multiple meter apps don't contend for the meter's single web session. Requires EH Meter Serial Number to be set (the meter serial identifies which AP is ours). Leave blank when not using the wifi rotator.",
+                    "default": null,
+                    "x-position": 9
+                },
                 "no_comms_timeout": {
                     "title": "No Comms Timeout",
                     "x-name": "no_comms_timeout",
@@ -297,7 +310,7 @@
                     "x-required": false,
                     "description": "Time in minutes after which the meter is considered to be offline",
                     "default": 10,
-                    "x-position": 9
+                    "x-position": 10
                 },
                 "dv_app_position": {
                     "title": "Position",
@@ -310,7 +323,7 @@
                     "x-required": false,
                     "description": "Position of Application in UI Structure. Smaller numbers are closer to the top.",
                     "default": 100,
-                    "x-position": 10,
+                    "x-position": 11,
                     "minimum": 0
                 }
             },
