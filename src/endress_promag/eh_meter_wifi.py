@@ -126,29 +126,76 @@ class EHMeter:
 
     # -------- public sync --------
 
-    async def update(self):
-        return await self.get_measured_values_async()
+    async def update(self, expected_serial: Optional[str] = None) -> bool:
+        """Read the meter, committing the values only if the read is coherent.
+
+        A sweep is committed to ``self.values`` all-at-once, and only when it
+        completed end-to-end and (when ``expected_serial`` is given) the serial
+        read in *that same sweep* is ours. Partial sweeps are discarded.
+
+        This matters when a wifi rotator is cycling the device between several
+        meters' access points: every meter answers on the same IP, so a rotation
+        part-way through a read makes the retry land on a *different* meter. If
+        values were merged as they arrived, that neighbour's readings would blend
+        into this meter's cache — and, because the stale serial from an earlier
+        good read would still be sitting there, pass validation.
+
+        Returns True if a sweep was committed.
+        """
+        for _attempt in (1, 2):
+            values = await self._read_once()
+            if values is None:
+                continue
+            if not self._read_is_coherent(values, expected_serial):
+                continue
+            self.values.update(values)
+            return True
+        return False
 
     def get_measured_values(self) -> Dict[str, Dict[str, Any]]:
         asyncio.run(self.get_measured_values_async())
         return self.values
 
     async def get_measured_values_async(self) -> Dict[str, Dict[str, Any]]:
-        for attempt in (1, 2):
-            try:
-                async with self:
-                    p = await self._prime_and_login()
-                    p = await self._ensure_measurements_page(p)
-                    self.values.update(self._extract_values(p))
-                    p = await self._ensure_network_page(p)
-                    self.values.update(self._extract_values(p))
+        await self.update()
+        return self.values
+
+    async def _read_once(self) -> Optional[Dict[str, Dict[str, Any]]]:
+        """One full page sweep, returned standalone — never merged into self.values."""
+        try:
+            async with self:
+                p = await self._prime_and_login()
+                out: Dict[str, Dict[str, Any]] = {}
+                p = await self._ensure_measurements_page(p)
+                out.update(self._extract_values(p))
+                p = await self._ensure_network_page(p)
+                out.update(self._extract_values(p))
+                try:
                     await self._logout(p)
-                    if self.values or attempt == 2:
-                        return self.values
-            except Exception as e:
-                log.error(f"Error Retrieving EH Measured Values : {e}")
-                if self.debug:
-                    traceback.print_exc()
+                except Exception:
+                    pass  # values are already in hand; a failed logout doesn't void them
+                return out or None
+        except Exception as e:
+            log.error(f"Error Retrieving EH Measured Values : {e}")
+            if self.debug:
+                traceback.print_exc()
+            return None
+
+    def _read_is_coherent(self, values: Dict[str, Dict[str, Any]], expected_serial: Optional[str]) -> bool:
+        """Whether this sweep came, in its entirety, from the meter we expect."""
+        if not expected_serial:
+            return True  # no serial configured; nothing to check against
+        serial = values.get("Serial number", {}).get("value")
+        if serial is None:
+            log.warning("Discarding partial read: no serial number in this sweep")
+            return False
+        if serial != expected_serial:
+            log.warning(
+                f"Discarding read from meter {serial}: expected {expected_serial} "
+                f"(wifi rotated mid-read?)"
+            )
+            return False
+        return True
 
     # -------- async context --------
 

@@ -177,11 +177,7 @@ class EndressPromagApplication(Application):
         if self.use_modbus:
             await self.update_via_modbus()
         elif self._my_ap_is_active():
-            await self.eh_meter.update()
-            correct_serial = self.ensure_serial_number()
-            if not correct_serial:
-                log.warning("Serial number mismatch, Sleeping Longer")
-                await asyncio.sleep(25)
+            await self.update_via_wifi()
         else:
             log.info("WiFi rotator is on another meter's AP; skipping poll this cycle")
 
@@ -225,21 +221,19 @@ class EndressPromagApplication(Application):
         ssid_suffix = active_ssid.rsplit("_", 1)[-1]
         return serial.endswith(ssid_suffix)
 
-    def ensure_serial_number(self):
-        """Validate serial number (WiFi mode only)."""
-        if self.use_modbus:
-            return True
-        if self.config.eh_meter_serial_number.value is None or self.config.eh_meter_serial_number.value == "":
-            return True
-        serial_number = self.eh_meter.get_value("Serial number")
-        if serial_number is None:
-            # Couldn't read the serial this cycle (e.g. a starved or partial read).
-            # Don't wipe a possibly-valid cached reading — just skip confirmation.
-            return True
-        if serial_number != self.config.eh_meter_serial_number.value:
-            self.eh_meter.clear_values()
-            return False
-        return True
+    async def update_via_wifi(self):
+        """Read the meter over WiFi, discarding any read that isn't ours.
+
+        ``EHMeter.update`` commits a sweep only if it completed and its serial
+        matches, so a read interrupted by the wifi rotator (which lands the retry
+        on a neighbouring meter, since they all answer on the same IP) is dropped
+        rather than blended in. Dropping it is safe: the ``cached_value``
+        properties keep serving the last good reading until the no-comms timeout.
+        """
+        expected_serial = self.config.eh_meter_serial_number.value or None
+        committed = await self.eh_meter.update(expected_serial=expected_serial)
+        if not committed:
+            log.warning("Meter read discarded (incomplete, or from another meter); keeping last known values")
 
     def ensure_meter_online(self):
         """Clear cached values if meter is offline."""
